@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:types="urn:be:cin:types:v1" xmlns:tns="urn:be:cin:nip:tools:xades" elementFormDefault="qualified" targetNamespace="urn:be:cin:nip:tools:xades" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:import schemaLocation="https://dev.mycarenet.be/im-ws/XadesTools?xsd=commonTypes-v1.xsd" namespace="urn:be:cin:types:v1" />
+  <xsd:import schemaLocation="https://dev.mycarenet.be/im-ws/XadesTools?xsd=xmlmime.xsd" namespace="http://www.w3.org/2005/05/xmlmime" />
+  <xsd:element name="createXadesT">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="Detail" type="types:Blob" />
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="createXadesTResponse">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="return" type="xsd:base64Binary">
+          <xsd:annotation>
+            <xsd:documentation>
+							The signature in xades-t form, base64 encoded
+							to preserve the internal signature.
+						</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="verifyXadesT">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="Detail" type="types:Blob" />
+        <xsd:element name="Xades-t" type="xsd:base64Binary">
+          <xsd:annotation>
+            <xsd:documentation>
+							The signature in xades-t form, base64 encoded
+							to preserve the internal signature.
+						</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="verifyXadesTResponse">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="return" type="tns:VerificationResult" />
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:complexType name="VerificationResult">
+    <xsd:sequence>
+      <xsd:element name="ResultMajor" type="xsd:anyURI" />
+      <xsd:element minOccurs="0" name="ResultMinor" type="xsd:anyURI" />
+      <xsd:element name="ResultMessage" type="xsd:string" />
+      <xsd:element name="TimeStamp" type="xsd:date" />
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:element name="fault" type="types:FaultType" />
+</xsd:schema>
