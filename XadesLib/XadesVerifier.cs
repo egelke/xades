@@ -270,7 +270,13 @@ namespace IM.Xades
                         if (!((IStructuralEquatable)signatureValueHashed).Equals(timestampHash, StructuralComparisons.StructuralEqualityComparer))
                             throw new XadesValidationException("The timestamp doesn't match the signature value");
 
+                        //check the timestamp token against the signing time.
+                        DateTime tsTime = tst.TimeStampInfo.GenTime;
+                        if (signingTime == null) signingTime = tsTime;
+                        if ((tsTime - signingTime) > timestampGracePeriod) throw new XadesValidationException("The signature timestamp it to old with regards to the siging time");
+
                         //get timestamp certificate
+                        /*
                         IX509Store store = tst.GetCertificates("Collection");
                         ICollection signers = store.GetMatches(tst.SignerID);
                         if (signers.Count == 0) throw new NotSupportedException("Timestamp Signing certificate not part of the timestamp"); //TODO:support this
@@ -278,6 +284,7 @@ namespace IM.Xades
                         IEnumerator signersEnum = signers.GetEnumerator();
                         signersEnum.MoveNext();
                         //signersEnum.Current;
+                         */
 
                     }
                     else
