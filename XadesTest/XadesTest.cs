@@ -132,6 +132,7 @@ namespace IM.Xades.Test
         #endregion
 
         [TestMethod]
+        [ExpectedException(typeof(XadesValidationException))]
         public void VerifyXadesTTest()
         {
             byte[] xades = im.createXadesT(detail);
@@ -154,11 +155,6 @@ namespace IM.Xades.Test
             var xerifier = new XadesVerifier();
 
             var info = xerifier.Verify(document, (XmlElement) XadesTools.FindXadesProperties(xadesDoc)[0]);
-
-            Assert.IsNotNull(info);
-            Assert.AreEqual("CN=\"CBE=0820563481, MYCARENET\", OU=eHealth-platform Belgium, OU=CIN-NIC, OU=\"CBE=0820563481\", OU=MYCARENET, O=Federal Government, C=BE", info.Certificate.Subject);
-            Assert.AreEqual(XadesForm.XadesT, info.Form);
-            Assert.AreEqual(0.0, info.Time.Value.Offset.TotalHours);
         }
 
         [TestMethod]

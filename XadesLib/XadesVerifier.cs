@@ -271,10 +271,13 @@ namespace IM.Xades
                             throw new XadesValidationException("The timestamp doesn't match the signature value");
 
                         //check the timestamp token against the signing time.
+                        //TODO:check better
                         DateTime tsTime = tst.TimeStampInfo.GenTime;
-                        if (signingTime == null) signingTime = tsTime;
-                        if ((tsTime - signingTime) > timestampGracePeriod) throw new XadesValidationException("The signature timestamp it to old with regards to the siging time");
-
+                        if (signingTime == null)
+                        {
+                            DateTime signingTimeUtc = signingTime.Value.UtcDateTime;
+                            if (Math.Abs((tsTime - signingTimeUtc).TotalSeconds) > timestampGracePeriod.TotalSeconds) throw new XadesValidationException("The signature timestamp it to old with regards to the siging time");
+                        }
                         //get timestamp certificate
                         /*
                         IX509Store store = tst.GetCertificates("Collection");
