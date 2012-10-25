@@ -13,6 +13,12 @@ namespace IM.Xades.TSA
     {
         private Uri address;
 
+        /// <summary>
+        /// RFC3161 toward Fedict.
+        /// </summary>
+        /// <remarks>
+        /// You may only use this when you have the explicit agreement of Fedict. 
+        /// </remarks>
         public Rfc3161TimestampProvider()
         {
             address = new Uri("http://tsa.belgium.be/connect");
@@ -36,6 +42,7 @@ namespace IM.Xades.TSA
             String digestOid = CryptoConfig.MapNameToOID(CryptoConfig.CreateFromName(digestMethod).GetType().ToString());
 
             TimeStampRequestGenerator tsprg = new TimeStampRequestGenerator();
+            tsprg.SetCertReq(true);
             TimeStampRequest tspr = tsprg.Generate(digestOid, hash);
             byte[] tsprBytes = tspr.GetEncoded();
 

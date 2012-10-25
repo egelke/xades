@@ -52,9 +52,11 @@ namespace IM.Xades
             CryptoConfig.AddAlgorithm(typeof(OptionalDeflateTransform), OptionalDeflateTransform.AlgorithmUri);
         }
 
+        private XmlNamespaceManager nsMgr;
+
         private TimeSpan timestampGracePeriod;
 
-        private XmlNamespaceManager nsMgr;
+        private X509Certificate2 trustedTsaCert;
 
         /// <summary>
         /// The allowed time difference between the reported time and the time in the timestamp.
@@ -73,6 +75,25 @@ namespace IM.Xades
             set
             {
                 timestampGracePeriod = value;
+            }
+        }
+
+        /// <summary>
+        /// Set to trust a specific Timestamp authority.
+        /// </summary>
+        /// <remarks>
+        /// When you want to trust a specific timestamp authority, or the timestamp token does not contain the
+        /// certificates, this property can be used to trust a specific (single) TSA.
+        /// </remarks>
+        public X509Certificate2 TrustedTsaCert
+        {
+            get
+            {
+                return trustedTsaCert;
+            }
+            set
+            {
+                trustedTsaCert = value;
             }
         }
 
@@ -186,10 +207,9 @@ namespace IM.Xades
                 {
                     algo = (HashAlgorithm)CryptoConfig.CreateFromName(digestMethodTxtNode.Value);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    //TODO:add internal exception
-                    throw new InvalidXadesException("The provided digest method of the signing certificate in xades isn't valid or isn't supported");
+                    throw new InvalidXadesException("The provided digest method of the signing certificate in xades isn't valid or isn't supported", e);
                 }
                 String digestValueReal = Convert.ToBase64String(algo.ComputeHash(exactCerts[0].GetRawCertData()));
                 if (digestValueTxtNode.Value != digestValueReal) throw new XadesValidationException("The certificate of the key info isn't correct according to the certificate info in xades");
@@ -278,17 +298,58 @@ namespace IM.Xades
                             DateTime signingTimeUtc = signingTime.Value.UtcDateTime;
                             if (Math.Abs((tsTime - signingTimeUtc).TotalSeconds) > timestampGracePeriod.TotalSeconds) throw new XadesValidationException("The signature timestamp it to old with regards to the siging time");
                         }
-                        //get timestamp certificate
-                        /*
-                        IX509Store store = tst.GetCertificates("Collection");
-                        ICollection signers = store.GetMatches(tst.SignerID);
-                        if (signers.Count == 0) throw new NotSupportedException("Timestamp Signing certificate not part of the timestamp"); //TODO:support this
 
-                        IEnumerator signersEnum = signers.GetEnumerator();
-                        signersEnum.MoveNext();
-                        //signersEnum.Current;
-                         */
+                        //verify timestamp certificate
+                        if (trustedTsaCert == null)
+                        {
+                            IX509Store store = tst.GetCertificates("Collection");
+                            ICollection signers = store.GetMatches(tst.SignerID);
+                            if (signers.Count == 0) throw new InvalidOperationException("No certificates present in the timestamp and not trusted TSA certificate provided, please provide a trusted TSA certificate");
+                            if (signers.Count > 1) throw new InvalidOperationException("Multiple matching certificates present in the timstamp");
 
+                            foreach(Org.BouncyCastle.X509.X509Certificate cert in signers)
+                            {
+                                try
+                                {
+                                    tst.Validate((Org.BouncyCastle.X509.X509Certificate)cert);
+                                }
+                                catch (Exception e)
+                                {
+                                    throw new XadesValidationException("The timestamp isn't issued by the TSA provided in the timestamp", e);
+                                }
+                            }
+
+                            X509Chain tsaChain = new X509Chain();
+                            foreach(Org.BouncyCastle.X509.X509Certificate cert in store.GetMatches(null)) 
+                            {
+                                tsaChain.ChainPolicy.ExtraStore.Add(new X509Certificate2(cert.GetEncoded()));
+                            }
+                            tsaChain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
+                            tsaChain.ChainPolicy.RevocationMode = X509RevocationMode.Online; //TODO: configurable
+                            tsaChain.ChainPolicy.VerificationFlags = X509VerificationFlags.NoFlag; //TODO: configurable
+                            tsaChain.ChainPolicy.VerificationTime = tst.TimeStampInfo.GenTime;
+                            tsaChain.Build(signingCert);
+
+                            foreach (X509ChainElement chainE in tsaChain.ChainElements)
+                            {
+                                if (chainE.ChainElementStatus.Length > 0 && chainE.ChainElementStatus[0].Status != X509ChainStatusFlags.NoError)
+                                    throw new XadesValidationException(String.Format("The timestamp TSA chain contains an invalid certificate '{0}' ({1}: {2})",
+                                        chainE.Certificate.Subject, chainE.ChainElementStatus[0].Status, chainE.ChainElementStatus[0].StatusInformation));
+                            }
+                        }
+                        else
+                        {
+                            Org.BouncyCastle.X509.X509CertificateParser bcCertParser = new Org.BouncyCastle.X509.X509CertificateParser();
+                            Org.BouncyCastle.X509.X509Certificate bcTrustedTsa = bcCertParser.ReadCertificate(trustedTsaCert.GetRawCertData());
+                            try
+                            {
+                                tst.Validate(bcTrustedTsa);
+                            }
+                            catch (Exception e)
+                            {
+                                throw new XadesValidationException("The timestamp isn't issued by the trusted TSA", e);
+                            }
+                        }
                     }
                     else
                     {
