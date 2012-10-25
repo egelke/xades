@@ -31,5 +31,11 @@ namespace IM.Xades
         {
 
         }
+
+        public XadesValidationException(String message, Exception inner)
+            : base(message, inner)
+        {
+
+        }
     }
 }
