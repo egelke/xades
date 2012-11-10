@@ -28,12 +28,21 @@ namespace IM.Xades
     /// </summary>
     public class InvalidXadesException : Exception
     {
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="message">The exception message</param>
         public InvalidXadesException(String message)
             : base(message)
         {
 
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="message">The exception message</param>
+        /// <param name="inner">The inner exception</param>
         public InvalidXadesException(String message, Exception inner)
             : base(message)
         {

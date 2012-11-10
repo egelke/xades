@@ -20,7 +20,7 @@ using System.Net.Security;
 
 namespace IM.Xades.TSA.DSS
 {
-
+#pragma warning disable 1591
     /// <summary>
     /// Interface of the TSA client, do not use directly.
     /// </summary>
@@ -2752,4 +2752,5 @@ namespace IM.Xades.TSA.DSS
             return retVal.SignResponse;
         }
     }
+#pragma warning restore 1591
 }

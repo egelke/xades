@@ -97,6 +97,12 @@ namespace IM.Xades
             }
         }
 
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
+        /// <remarks>
+        /// Creates a verifier that hasn't an explicit Trusted TSA certificate and has a grace period of 10 minutes.
+        /// </remarks>
         public XadesVerifier()
         {
             timestampGracePeriod = new TimeSpan(0, 10, 0);
@@ -241,11 +247,11 @@ namespace IM.Xades
            
             //TODO:check for EPES.
 
-            //TODO:check timestamp
+            //check timestamp
             XmlNodeList timestamps = xadesProps.SelectNodes("./xades:UnsignedProperties/xades:UnsignedSignatureProperties/xades:SignatureTimeStamp", nsMgr);
             if (timestamps != null && timestamps.Count > 0)
             {
-                form = XadesForm.XadesT;
+                form = form | XadesForm.XadesT;
                 foreach (XmlNode timestamp in timestamps)
                 {
                     XmlNode timestampC14NAlgoNode = timestamp.SelectSingleNode("./ds:CanonicalizationMethod/@Algorithm", nsMgr);
@@ -291,7 +297,6 @@ namespace IM.Xades
                             throw new XadesValidationException("The timestamp doesn't match the signature value");
 
                         //check the timestamp token against the signing time.
-                        //TODO:check better
                         DateTime tsTime = tst.TimeStampInfo.GenTime;
                         if (signingTime == null)
                         {

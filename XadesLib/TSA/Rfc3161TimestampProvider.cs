@@ -9,12 +9,18 @@ using System.Security.Cryptography;
 
 namespace IM.Xades.TSA
 {
+    /// <summary>
+    /// Timestamp provided via teh RFC3161 protocol.
+    /// </summary>
+    /// <remarks>
+    /// Get a timestamp via the HTTP protocol.
+    /// </remarks>
     public class Rfc3161TimestampProvider : ITimestampProvider
     {
         private Uri address;
 
         /// <summary>
-        /// RFC3161 toward Fedict.
+        /// Constuctor that has the Fedict TSA as destination.
         /// </summary>
         /// <remarks>
         /// You may only use this when you have the explicit agreement of Fedict. 
@@ -24,17 +30,21 @@ namespace IM.Xades.TSA
             address = new Uri("http://tsa.belgium.be/connect");
         }
 
+        /// <summary>
+        /// Constructor that accept the address of the TSA.
+        /// </summary>
+        /// <param name="address">The url of the TSA</param>
         public Rfc3161TimestampProvider(Uri address)
         {
             this.address = address;
         }
 
         /// <summary>
-        /// 
+        /// Gets a timestamp of the provided address via the RFC3161.
         /// </summary>
-        /// <param name="hash"></param>
-        /// <param name="digestMethod"></param>
-        /// <returns></returns>
+        /// <param name="hash">The has to get the timestamp from</param>
+        /// <param name="digestMethod">The algorithm used to calculate the hash</param>
+        /// <returns>The timestamp token in binary (encoded) format</returns>
         /// <exception cref="WebException">When the TSA returned a http-error</exception>
         /// <exception cref="TspValidationException">When the TSA returns an invalid timestamp response</exception>
         public byte[] GetTimestampFromDocumentHash(byte[] hash, string digestMethod)
