@@ -24,11 +24,22 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace IM.Xades
 {
-
+    /// <summary>
+    /// Information about a (validated) XAdES signature.
+    /// </summary>
+    /// <remarks>
+    /// Contains the required information about a validated XAdES signature.
+    /// </remarks>
     public class SignatureInfo
     {
         private XadesForm form;
 
+        /// <summary>
+        /// The form of the XAdES signature validated.
+        /// </summary>
+        /// <value>
+        /// Contains all the forms that apply for the signature (e.g. XadesBes | XadesT)
+        /// </value>
         public XadesForm Form
         {
             get { return form; }
@@ -37,13 +48,26 @@ namespace IM.Xades
 
         private X509Certificate2 certificate;
 
+        /// <summary>
+        /// The certificate used to sign.
+        /// </summary>
+        /// <value>
+        /// Indentifies the person who signed the message that corresponds to the signature.
+        /// </value>
         public X509Certificate2 Certificate
         {
             get { return certificate; }
             set { certificate = value; }
         }
+
         private DateTimeOffset? time;
 
+        /// <summary>
+        /// The time the signature was create, if present.
+        /// </summary>
+        /// <value>
+        /// If a time is provided, it is returned here (after validation).
+        /// </value>
         public DateTimeOffset? Time
         {
             get { return time; }

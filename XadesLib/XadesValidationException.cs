@@ -23,15 +23,26 @@ using System.Text;
 
 namespace IM.Xades
 {
+    /// <summary>
+    /// Exception indicating that the XAdES signature is invalid.
+    /// </summary>
     public class XadesValidationException : Exception
     {
-
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="message">The exception message</param>
         public XadesValidationException(String message)
             : base(message)
         {
 
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="message">The exception message</param>
+        /// <param name="inner">The inner exception</param>
         public XadesValidationException(String message, Exception inner)
             : base(message, inner)
         {

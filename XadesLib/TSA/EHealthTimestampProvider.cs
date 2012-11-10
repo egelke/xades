@@ -81,7 +81,7 @@ namespace IM.Xades.TSA
         /// <example>
         /// <code language="C#">
         /// tsa = new TSA.DSS.TimeStampAuthorityClient(new StsBinding(), new EndpointAddress("https://wwwacc.ehealth.fgov.be/timestampauthority_1_5/timestampauthority"));
-        /// tsa.Endpoint.Behaviors.Remove<ClientCredentials>();
+        /// tsa.Endpoint.Behaviors.Remove&lt;ClientCredentials&gt;();
         /// tsa.Endpoint.Behaviors.Add(new OptClientCredentials());
         /// tsa.ClientCredentials.ClientCertificate.Certificate = certificate;
         /// var tsProvider = new EHealthTimestampProvider(tsa);
