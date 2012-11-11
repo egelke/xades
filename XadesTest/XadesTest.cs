@@ -158,6 +158,13 @@ namespace IM.Xades.Test
             xerifier.TrustedTsaCert = tsaCert;
 
             var info = xerifier.Verify(document, (XmlElement) XadesTools.FindXadesProperties(xadesDoc)[0]);
+
+            Assert.IsNotNull(info);
+            Assert.IsNotNull(info.Certificate);
+            Assert.AreEqual(sign, info.Certificate); 
+            Assert.AreEqual(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
+            Assert.IsNotNull(info.Time);
+            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
         }
 
         [TestMethod]
@@ -198,8 +205,10 @@ namespace IM.Xades.Test
 
             Assert.IsNotNull(info);
             Assert.IsNotNull(info.Certificate);
+            Assert.AreEqual(sign, info.Certificate);
             Assert.AreEqual(XadesForm.XadesBes, info.Form);
-            Assert.AreEqual(0.0, info.Time.Value.Offset.TotalHours);
+            Assert.IsNotNull(info.Time);
+            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
         }
 
         [TestMethod]
@@ -228,6 +237,11 @@ namespace IM.Xades.Test
             var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xades2)[0]);
 
             Assert.IsNotNull(info);
+            Assert.IsNotNull(info.Certificate);
+            Assert.AreEqual(sign, info.Certificate);
+            Assert.AreEqual(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
+            Assert.IsNotNull(info.Time);
+            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
         }
 
         [TestMethod]
@@ -268,8 +282,10 @@ namespace IM.Xades.Test
 
             Assert.IsNotNull(info);
             Assert.IsNotNull(info.Certificate);
+            Assert.AreEqual(sign, info.Certificate);
             Assert.AreEqual(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
-            Assert.AreEqual(0.0, info.Time.Value.Offset.TotalHours);
+            Assert.IsNotNull(info.Time);
+            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
         }
 
         [TestMethod]
