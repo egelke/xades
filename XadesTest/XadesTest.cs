@@ -43,6 +43,7 @@ namespace IM.Xades.Test
 
         private static X509Certificate2 auth;
         private static X509Certificate2 sign;
+        private static X509Certificate2 tsaCert;
         private static TSA.DSS.TimeStampAuthorityClient tsa;
         private static IntModule.XadesToolsClient im;
 
@@ -60,6 +61,7 @@ namespace IM.Xades.Test
             sign = selectedCerts[0];
             //sign = auth;
 
+            tsaCert = new X509Certificate2("tsa.crt");
 
             //load test document as xml
             document = new XmlDocument();
@@ -153,6 +155,7 @@ namespace IM.Xades.Test
             System.Console.WriteLine(xml.ToString());
 
             var xerifier = new XadesVerifier();
+            xerifier.TrustedTsaCert = tsaCert;
 
             var info = xerifier.Verify(document, (XmlElement) XadesTools.FindXadesProperties(xadesDoc)[0]);
         }
@@ -206,6 +209,7 @@ namespace IM.Xades.Test
             xigner.TimestampProvider = new TSA.EHealthTimestampProvider(tsa);
             xigner.DataTransforms.Add(new XmlDsigBase64Transform());
             xigner.DataTransforms.Add(new OptionalDeflateTransform());
+
             var xades = xigner.CreateXadesT(document, "_D4840C96-8212-491C-9CD9-B7144C1AD450");
 
             MemoryStream stream = new MemoryStream();
@@ -220,6 +224,7 @@ namespace IM.Xades.Test
             xades2.Load(stream);
 
             var xerifier = new XadesVerifier();
+            xerifier.TrustedTsaCert = tsaCert;
             var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xades2)[0]);
 
             Assert.IsNotNull(info);
@@ -263,7 +268,7 @@ namespace IM.Xades.Test
 
             Assert.IsNotNull(info);
             Assert.IsNotNull(info.Certificate);
-            Assert.AreEqual(XadesForm.XadesT, info.Form);
+            Assert.AreEqual(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
             Assert.AreEqual(0.0, info.Time.Value.Offset.TotalHours);
         }
 
