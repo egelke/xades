@@ -59,7 +59,6 @@ namespace IM.Xades.Test
             X509Certificate2Collection canidateCerts = store.Certificates.Find(X509FindType.FindByKeyUsage, X509KeyUsageFlags.NonRepudiation, true);
             X509Certificate2Collection selectedCerts = X509Certificate2UI.SelectFromCollection(canidateCerts, "Select cert", "Select your signing cert", X509SelectionFlag.SingleSelection);
             sign = selectedCerts[0];
-            //sign = auth;
 
             tsaCert = new X509Certificate2("tsa.crt");
 
@@ -134,7 +133,48 @@ namespace IM.Xades.Test
         #endregion
 
         [TestMethod]
-        [ExpectedException(typeof(XadesValidationException))]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void CreatorConstructorParamNull()
+        {
+            new XadesCreator(null);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void CreatorConstructorParamInval()
+        {
+            new XadesCreator(tsaCert);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void CreatorSignParamNull()
+        {
+            var xigner = new XadesCreator(sign);
+
+            xigner.CreateXadesBes(null);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void VerifierVerifyParam1Null()
+        {
+            var xerifer = new XadesVerifier();
+
+            xerifer.Verify(null, null);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void VerifierVerifyParam2Null()
+        {
+            var xerifer = new XadesVerifier();
+
+            xerifer.Verify(new XmlDocument(), null);
+        }
+
+        //[TestMethod]
+        //[ExpectedException(typeof(XadesValidationException))]
         public void VerifyXadesTTest()
         {
             byte[] xades = im.createXadesT(detail);
@@ -157,14 +197,8 @@ namespace IM.Xades.Test
             var xerifier = new XadesVerifier();
             xerifier.TrustedTsaCert = tsaCert;
 
+            //Uses a test certificate that isn't valid.
             var info = xerifier.Verify(document, (XmlElement) XadesTools.FindXadesProperties(xadesDoc)[0]);
-
-            Assert.IsNotNull(info);
-            Assert.IsNotNull(info.Certificate);
-            Assert.AreEqual(sign, info.Certificate); 
-            Assert.AreEqual(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
-            Assert.IsNotNull(info.Time);
-            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
         }
 
         [TestMethod]
@@ -212,6 +246,48 @@ namespace IM.Xades.Test
         }
 
         [TestMethod]
+        public void RountTestXadesTFullDoc()
+        {
+            var xigner = new XadesCreator(sign);
+            xigner.TimestampProvider = new TSA.EHealthTimestampProvider(tsa);
+
+            var xades = xigner.CreateXadesT(document);
+
+            var xml = new StringBuilder();
+            var writerSettings = new XmlWriterSettings
+            {
+                Indent = true
+            };
+            using (var writer = XmlWriter.Create(xml, writerSettings))
+            {
+                xades.WriteTo(writer);
+            }
+            System.Console.WriteLine(xml.ToString());
+
+            MemoryStream stream = new MemoryStream();
+            using (var writer = XmlWriter.Create(stream))
+            {
+                xades.WriteTo(writer);
+            }
+            stream.Seek(0, SeekOrigin.Begin);
+
+            var xades2 = new XmlDocument();
+            xades2.PreserveWhitespace = true;
+            xades2.Load(stream);
+
+            var xerifier = new XadesVerifier();
+            xerifier.TrustedTsaCert = tsaCert;
+            var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xades2)[0]);
+
+            Assert.IsNotNull(info);
+            Assert.IsNotNull(info.Certificate);
+            Assert.AreEqual(sign, info.Certificate);
+            Assert.AreEqual(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
+            Assert.IsNotNull(info.Time);
+            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
+        }
+
+        [TestMethod]
         public void RoundTestXadesT()
         {
             var xigner = new XadesCreator(sign);
@@ -220,6 +296,17 @@ namespace IM.Xades.Test
             xigner.DataTransforms.Add(new OptionalDeflateTransform());
 
             var xades = xigner.CreateXadesT(document, "_D4840C96-8212-491C-9CD9-B7144C1AD450");
+
+            var xml = new StringBuilder();
+            var writerSettings = new XmlWriterSettings
+            {
+                Indent = true
+            };
+            using (var writer = XmlWriter.Create(xml, writerSettings))
+            {
+                xades.WriteTo(writer);
+            }
+            System.Console.WriteLine(xml.ToString());
 
             MemoryStream stream = new MemoryStream();
             using (var writer = XmlWriter.Create(stream))
@@ -288,7 +375,7 @@ namespace IM.Xades.Test
             Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void CreatXadesTTest()
         {
 
