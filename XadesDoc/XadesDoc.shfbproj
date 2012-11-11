@@ -95,17 +95,16 @@
     </ProjectSummary>
     <NamespaceSummaries>
       <NamespaceSummaryItem name="(global)" isDocumented="False">Global namespace sumary</NamespaceSummaryItem>
-      <NamespaceSummaryItem name="Egelke.Xades" isDocumented="True">The main namespace.
+<NamespaceSummaryItem name="IM.Xades" isDocumented="True">The main namespace.
 
 This namespace contains the classes to both create and XAdES signatures.</NamespaceSummaryItem>
-      <NamespaceSummaryItem name="Egelke.Xades.TSA" isDocumented="True">Timestamp authority releated classes.
+<NamespaceSummaryItem name="IM.Xades.Extra" isDocumented="True">Usefull extras</NamespaceSummaryItem>
+<NamespaceSummaryItem name="IM.Xades.TSA" isDocumented="True">Timestamp authority releated classes.
 
 XAdES-T and above require timestamp(s) which must be provided by an timestamp authority.  This namespace contains classes to obtain this timestamp from different type of timestamp authorities.</NamespaceSummaryItem>
-      <NamespaceSummaryItem name="Egelke.Xades.TSA.DSS" isDocumented="True">DSS web service client.
+<NamespaceSummaryItem name="IM.Xades.TSA.DSS" isDocumented="True">DSS web service client.
 
-This namespace contains the generated classes for web services compliant with the DSS 1.0 standard.  These classes should not be used directly with exception of the client class.  An instance and preconfigured client class can be provided to the DssTimestampProvider class.</NamespaceSummaryItem>
-      <NamespaceSummaryItem name="Egelke.Xades.Extra" isDocumented="True">Usefull extras</NamespaceSummaryItem>
-    </NamespaceSummaries>
+This namespace contains the generated classes for web services compliant with the DSS 1.0 standard.  These classes should not be used directly with exception of the client class.  An instance and preconfigured client class can be provided to the DssTimestampProvider class.</NamespaceSummaryItem></NamespaceSummaries>
     <BuildAssemblerVerbosity>AllMessages</BuildAssemblerVerbosity>
     <HelpFileFormat>HtmlHelp1</HelpFileFormat>
     <IndentHtml>False</IndentHtml>
@@ -128,6 +127,7 @@ This namespace contains the generated classes for web services compliant with th
     <SccProvider>SAK</SccProvider>
     <SccAuxPath>SAK</SccAuxPath>
     <SccLocalPath>SAK</SccLocalPath>
+    <CopyrightText>%28c%29 I.M. vzw</CopyrightText>
   </PropertyGroup>
   <!-- There are no properties for these groups.  AnyCPU needs to appear in
        order for Visual Studio to perform the build.  The others are optional

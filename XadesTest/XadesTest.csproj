@@ -87,6 +87,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Include="data\MYCARENET.p12" />
+    <None Include="data\tsa.crt" />
     <None Include="Service References\IntModule\IM.Xades.Test.IntModule.VerificationResult.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
