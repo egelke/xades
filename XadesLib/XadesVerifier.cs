@@ -130,6 +130,7 @@ namespace IM.Xades
         {
             XadesForm form = XadesForm.XadesBes;
 
+            if (doc == null) throw new ArgumentNullException("doc", "The doc argument can't be null");
             if (xadesProps == null) throw new ArgumentNullException("xadesProps", "The xades props argument can't be null");
 
             //check if we get a valid xades-props

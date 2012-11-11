@@ -354,7 +354,7 @@ namespace IM.Xades
         /// Create a XAdES-T signature, singing the the part with the provided reference.
         /// </summary>
         /// <remarks>
-        /// Create a XAdES-BES and immidately extends it to a XAdES-T.
+        /// Create a XAdES-BES and immedately extends it to a XAdES-T.
         /// </remarks>
         /// <param name="doc">XML document contains an element with an "Id" equal to the reference parameter</param>
         /// <param name="reference">The reference of the elmement to sign, without the #-sign</param>
@@ -364,6 +364,23 @@ namespace IM.Xades
         public XmlElement CreateXadesT(XmlDocument doc, String reference)
         {
             XmlElement signature = CreateXadesBes(doc, reference);
+            ExtendToXadesT(ref signature);
+            return signature;
+        }
+
+        /// <summary>
+        /// Create a XAdES-T signature, singing the the entire document (enveloped).
+        /// </summary>
+        /// <remarks>
+        /// Create a XAdES-BES and immedately extends it to a XAdES-T.
+        /// </remarks>
+        /// <param name="doc">XML document to be signed.</param>
+        /// <returns>The XML-signature element containing the required XAdES structures.</returns>
+        /// <seealso cref="XadesCreator.CreateXadesBes(XmlDocument)"/>
+        /// <seealso cref="XadesCreator.ExtendToXadesT(ref XmlElement)"/>
+        public XmlElement CreateXadesT(XmlDocument doc)
+        {
+            XmlElement signature = CreateXadesBes(doc);
             ExtendToXadesT(ref signature);
             return signature;
         }
