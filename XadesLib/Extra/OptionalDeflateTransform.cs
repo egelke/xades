@@ -86,8 +86,9 @@ namespace IM.Xades.Extra
         }
 
         /// <summary>
-        /// Not used.
+        /// Not used, not implemented.
         /// </summary>
+        /// <param name="nodeList">The xml to load</param>
         public override void LoadInnerXml(XmlNodeList nodeList)
         {
 
@@ -96,6 +97,9 @@ namespace IM.Xades.Extra
         /// <summary>
         /// Not used.
         /// </summary>
+        /// <returns>
+        /// Always <c>null</c>.
+        /// </returns>
         protected override XmlNodeList GetInnerXml()
         {
             return null;
@@ -104,6 +108,7 @@ namespace IM.Xades.Extra
         /// <summary>
         /// Method used by the library, do not call.
         /// </summary>
+        /// <param name="obj">The stream to load as imput</param>
         public override void LoadInput(object obj)
         {
             Stream s = obj as Stream;
@@ -120,6 +125,9 @@ namespace IM.Xades.Extra
         /// <summary>
         /// Method used by the library, do not call.
         /// </summary>
+        /// <returns>
+        /// The enflating stream.
+        /// </returns>
         public override object GetOutput()
         {
             return efs;
@@ -128,6 +136,10 @@ namespace IM.Xades.Extra
         /// <summary>
         /// Method used by the library, do not call.
         /// </summary>
+        /// <param name="type">The type of output that is required</param>
+        /// <returns>
+        /// The enflating stream
+        /// </returns>
         public override object GetOutput(Type type)
         {
             if (type != typeof(Stream) && !type.IsSubclassOf(typeof(Stream)))

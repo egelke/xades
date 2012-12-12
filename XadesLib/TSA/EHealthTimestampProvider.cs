@@ -97,6 +97,9 @@ namespace IM.Xades.TSA
         /// <summary>
         /// Method used by the library, not not call youself.
         /// </summary>
+        /// <param name="hash">The hash on which the digesht must be calculated</param>
+        /// <param name="digestMethod">The digest method with which the hash was calculated</param>
+        /// <returns>The RFC3161 Timestamp token</returns>
         public override byte[] GetTimestampFromDocumentHash(byte[] hash, string digestMethod)
         {
             //Translate the digest method name
