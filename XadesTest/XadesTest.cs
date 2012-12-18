@@ -173,8 +173,7 @@ namespace IM.Xades.Test
             xerifer.Verify(new XmlDocument(), null);
         }
 
-        //[TestMethod]
-        //[ExpectedException(typeof(XadesValidationException))]
+        [TestMethod]
         public void VerifyXadesTTest()
         {
             byte[] xades = im.createXadesT(detail);
@@ -195,6 +194,7 @@ namespace IM.Xades.Test
             System.Console.WriteLine(xml.ToString());
 
             var xerifier = new XadesVerifier();
+            xerifier.RevocationMode = X509RevocationMode.NoCheck;
             xerifier.TrustedTsaCert = tsaCert;
 
             //Uses a test certificate that isn't valid.
