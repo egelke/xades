@@ -58,6 +58,8 @@ namespace IM.Xades
 
         private X509Certificate2 trustedTsaCert;
 
+        private X509RevocationMode revocationMode;
+
         /// <summary>
         /// The allowed time difference between the reported time and the time in the timestamp.
         /// </summary>
@@ -98,6 +100,26 @@ namespace IM.Xades
         }
 
         /// <summary>
+        /// Set the revocation mode of all certification revocation checks.
+        /// </summary>
+        /// <remarks>
+        /// The default value is online, requiring a connection to the internet.  The offline mode
+        /// requires that the crl's are imported in the windows certificate store in advance.  The
+        /// no-check mode deactives the revocation checks and should only be used for testing.
+        /// </remarks>
+        public X509RevocationMode RevocationMode
+        {
+            get
+            {
+                return revocationMode;
+            }
+            set
+            {
+                revocationMode = value;
+            }
+        }
+
+        /// <summary>
         /// Default constructor.
         /// </summary>
         /// <remarks>
@@ -106,6 +128,7 @@ namespace IM.Xades
         public XadesVerifier()
         {
             timestampGracePeriod = new TimeSpan(0, 10, 0);
+            revocationMode = X509RevocationMode.Online;
 
             var doc = new XmlDocument();
             nsMgr = new XmlNamespaceManager(doc.NameTable);
@@ -331,7 +354,7 @@ namespace IM.Xades
                                 tsaChain.ChainPolicy.ExtraStore.Add(new X509Certificate2(cert.GetEncoded()));
                             }
                             tsaChain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
-                            tsaChain.ChainPolicy.RevocationMode = X509RevocationMode.Online; //TODO: configurable
+                            tsaChain.ChainPolicy.RevocationMode = revocationMode; //TODO: configurable
                             tsaChain.ChainPolicy.VerificationFlags = X509VerificationFlags.NoFlag; //TODO: configurable
                             tsaChain.ChainPolicy.VerificationTime = tst.TimeStampInfo.GenTime;
                             tsaChain.Build(signingCert);
@@ -371,7 +394,7 @@ namespace IM.Xades
             X509Chain chain = new X509Chain();
             chain.ChainPolicy.ExtraStore.AddRange(includedCerts);
             chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
-            chain.ChainPolicy.RevocationMode = X509RevocationMode.Online; //TODO: configurable
+            chain.ChainPolicy.RevocationMode = revocationMode; //TODO: configurable
             chain.ChainPolicy.VerificationFlags = X509VerificationFlags.NoFlag; //TODO: configurable
             chain.ChainPolicy.VerificationTime = signingTime == null? DateTime.Now : signingTime.Value.LocalDateTime;
             chain.Build(signingCert);  //check each cert instead of the result
