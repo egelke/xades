@@ -23,7 +23,7 @@
   <Metadata>
     <MetadataFile FileName="XadesTools4.xsd" MetadataType="Schema" ID="2b8a75b2-82a6-4c67-ab9f-913d59e31e9f" SourceId="1" SourceUrl="https://dev.mycarenet.be/im-ws/XadesTools?xsd=xml.xsd" />
     <MetadataFile FileName="XadesTools41.xsd" MetadataType="Schema" ID="6dddd4ba-c715-4913-8c95-643ccb58944c" SourceId="1" SourceUrl="https://dev.mycarenet.be/im-ws/XadesTools?xsd=XadesTools.xsd" />
-    <MetadataFile FileName="XadesTools42.xsd" MetadataType="Schema" ID="22b932cb-12ee-4688-ada7-be1d99ebc49a" SourceId="1" SourceUrl="https://dev.mycarenet.be/im-ws/XadesTools?xsd=commonTypes-v1.xsd" />
+    <MetadataFile FileName="XadesTools.xsd" MetadataType="Schema" ID="a6821f0d-0ad9-43c6-8e85-568f216d34ae" SourceId="1" SourceUrl="https://dev.mycarenet.be/im-ws/XadesTools?xsd=commonTypes-v1.2.xsd" />
     <MetadataFile FileName="XadesTools43.xsd" MetadataType="Schema" ID="a9f3db5b-6584-4e18-a563-fa7f3b6fd5ed" SourceId="1" SourceUrl="https://dev.mycarenet.be/im-ws/XadesTools?xsd=xmlmime.xsd" />
     <MetadataFile FileName="XadesTools1.wsdl" MetadataType="Wsdl" ID="09e97d31-1618-47e9-be65-d929e87b0acc" SourceId="1" SourceUrl="https://dev.mycarenet.be/im-ws/XadesTools?wsdl" />
   </Metadata>

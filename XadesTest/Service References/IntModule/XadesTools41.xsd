@@ -1,15 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xsd:schema xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:types="urn:be:cin:types:v1" xmlns:tns="urn:be:cin:nip:tools:xades" elementFormDefault="qualified" targetNamespace="urn:be:cin:nip:tools:xades" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <xsd:import schemaLocation="https://dev.mycarenet.be/im-ws/XadesTools?xsd=commonTypes-v1.xsd" namespace="urn:be:cin:types:v1" />
+  <xsd:import schemaLocation="https://dev.mycarenet.be/im-ws/XadesTools?xsd=commonTypes-v1.2.xsd" namespace="urn:be:cin:types:v1" />
   <xsd:import schemaLocation="https://dev.mycarenet.be/im-ws/XadesTools?xsd=xmlmime.xsd" namespace="http://www.w3.org/2005/05/xmlmime" />
   <xsd:element name="createXadesT">
     <xsd:complexType>
       <xsd:sequence>
-        <xsd:element name="Detail" type="types:Blob" />
+        <xsd:element name="ResponseDetail" type="types:Blob" />
+        <xsd:element name="RequestDetail" type="types:Blob" />
       </xsd:sequence>
     </xsd:complexType>
   </xsd:element>
   <xsd:element name="createXadesTResponse">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="return" type="xsd:base64Binary">
+          <xsd:annotation>
+            <xsd:documentation>
+							The signature in xades-t form, base64 encoded
+							to preserve the internal signature.
+						</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="createXadesBes">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="ResponseDetail" type="types:Blob" />
+        <xsd:element name="RequestDetail" type="types:Blob" />
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="createXadesBesResponse">
     <xsd:complexType>
       <xsd:sequence>
         <xsd:element name="return" type="xsd:base64Binary">

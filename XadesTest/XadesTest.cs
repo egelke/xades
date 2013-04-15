@@ -30,6 +30,7 @@ using System.ServiceModel;
 using System.ServiceModel.Description;
 using Siemens.EHealth.Client.Sso.WA;
 using IM.Xades.Extra;
+using System.Collections.Generic;
 
 namespace IM.Xades.Test
 {
@@ -40,10 +41,11 @@ namespace IM.Xades.Test
     {
         private static XmlDocument document;
         private static IntModule.Blob detail;
+        private static IntModule.Blob detail2;
 
         private static X509Certificate2 auth;
         private static X509Certificate2 sign;
-        private static X509Certificate2 tsaCert;
+        private static List<X509Certificate2> tsaCerts;
         private static TSA.DSS.TimeStampAuthorityClient tsa;
         private static IntModule.XadesToolsClient im;
 
@@ -60,7 +62,11 @@ namespace IM.Xades.Test
             X509Certificate2Collection selectedCerts = X509Certificate2UI.SelectFromCollection(canidateCerts, "Select cert", "Select your signing cert", X509SelectionFlag.SingleSelection);
             sign = selectedCerts[0];
 
-            tsaCert = new X509Certificate2("tsa.crt");
+            tsaCerts = new List<X509Certificate2>();
+            foreach (String file in Directory.GetFiles("tsa"))
+            {
+                tsaCerts.Add(new X509Certificate2(file));
+            }
 
             //load test document as xml
             document = new XmlDocument();
@@ -69,10 +75,14 @@ namespace IM.Xades.Test
 
             //load the document as POCO
             XmlSerializer serializer = new XmlSerializer(typeof(IntModule.Blob));
-            StringWriter writer = new StringWriter();
-            serializer.Serialize(writer, new IntModule.Blob());
-            System.Console.WriteLine(writer.ToString());
-            detail = (IntModule.Blob)serializer.Deserialize(new FileStream(@"document.xml", FileMode.Open));
+            using (FileStream part1 = new FileStream(@"part1.xml", FileMode.Open))
+            {
+                detail = (IntModule.Blob)serializer.Deserialize(part1);
+            }
+            using (FileStream part2 = new FileStream(@"part2.xml", FileMode.Open))
+            {
+                detail2 = (IntModule.Blob)serializer.Deserialize(part2);
+            }
 
             //create the tsa
             tsa = new TSA.DSS.TimeStampAuthorityClient(new StsBinding(), new EndpointAddress("https://wwwacc.ehealth.fgov.be/timestampauthority_1_5/timestampauthority"));
@@ -143,7 +153,7 @@ namespace IM.Xades.Test
         [ExpectedException(typeof(ArgumentException))]
         public void CreatorConstructorParamInval()
         {
-            new XadesCreator(tsaCert);
+            new XadesCreator(tsaCerts[0]);
         }
 
         [TestMethod]
@@ -174,9 +184,80 @@ namespace IM.Xades.Test
         }
 
         [TestMethod]
+        public void VerifyXadesTWithManifestTest()
+        {
+            byte[] xades = im.createXadesT(detail, detail2);
+
+            XmlDocument xadesDoc = new XmlDocument();
+            xadesDoc.PreserveWhitespace = true;
+            xadesDoc.Load(new MemoryStream(xades));
+
+            var xerifier = new XadesVerifier();
+            xerifier.RevocationMode = X509RevocationMode.NoCheck;
+            xerifier.VerifyManifest = true;
+            xerifier.TrustedTsaCerts = tsaCerts;
+            var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xadesDoc)[0]);
+
+            Assert.IsNotNull(info);
+            Assert.IsNotNull(info.Certificate);
+            Assert.AreEqual(XadesForm.XadesT, info.Form);
+            Assert.IsNotNull(info.Time);
+            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
+            Assert.AreEqual(ManifestResultStatus.Valid, info.ManifestResult[0].Status);
+        }
+
+        [TestMethod]
+        public void VerifyXadesTWithInvalidHashManifestTest()
+        {
+            byte[] xades = im.createXadesT(detail, detail2);
+
+            XmlDocument xadesDoc = new XmlDocument();
+            xadesDoc.PreserveWhitespace = true;
+            xadesDoc.Load(new MemoryStream(xades));
+
+            document = new XmlDocument();
+            document.PreserveWhitespace = true;
+            document.Load(@"documentInval.xml");
+
+            var xerifier = new XadesVerifier();
+            xerifier.RevocationMode = X509RevocationMode.NoCheck;
+            xerifier.VerifyManifest = true;
+            xerifier.TrustedTsaCerts = tsaCerts;
+            var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xadesDoc)[0]);
+
+            Assert.IsNotNull(info);
+            Assert.IsNotNull(info.Certificate);
+            Assert.AreEqual(XadesForm.XadesT, info.Form);
+            Assert.IsNotNull(info.Time);
+            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
+            Assert.AreEqual(ManifestResultStatus.Invalid, info.ManifestResult[0].Status);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidXadesException))]
+        public void VerifyXadesTWithInvalidRefManifestTest()
+        {
+            byte[] xades = im.createXadesT(detail, detail2);
+
+            XmlDocument xadesDoc = new XmlDocument();
+            xadesDoc.PreserveWhitespace = true;
+            xadesDoc.Load(new MemoryStream(xades));
+
+            document = new XmlDocument();
+            document.PreserveWhitespace = true;
+            document.Load(@"part1.xml");
+
+            var xerifier = new XadesVerifier();
+            xerifier.RevocationMode = X509RevocationMode.NoCheck;
+            xerifier.VerifyManifest = true;
+            xerifier.TrustedTsaCerts = tsaCerts;
+            var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xadesDoc)[0]);
+        }
+
+        [TestMethod]
         public void VerifyXadesTTest()
         {
-            byte[] xades = im.createXadesT(detail);
+            byte[] xades = im.createXadesT(detail, null);
 
             XmlDocument xadesDoc = new XmlDocument();
             xadesDoc.PreserveWhitespace = true;
@@ -195,10 +276,16 @@ namespace IM.Xades.Test
 
             var xerifier = new XadesVerifier();
             xerifier.RevocationMode = X509RevocationMode.NoCheck;
-            xerifier.TrustedTsaCert = tsaCert;
+            xerifier.TrustedTsaCerts = tsaCerts;
 
             //Uses a test certificate that isn't valid.
             var info = xerifier.Verify(document, (XmlElement) XadesTools.FindXadesProperties(xadesDoc)[0]);
+
+            Assert.IsNotNull(info);
+            Assert.IsNotNull(info.Certificate);
+            Assert.AreEqual(XadesForm.XadesT, info.Form);
+            Assert.IsNotNull(info.Time);
+            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
         }
 
         [TestMethod]
@@ -276,7 +363,7 @@ namespace IM.Xades.Test
             xades2.Load(stream);
 
             var xerifier = new XadesVerifier();
-            xerifier.TrustedTsaCert = tsaCert;
+            xerifier.TrustedTsaCerts = tsaCerts;
             var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xades2)[0]);
 
             Assert.IsNotNull(info);
@@ -320,7 +407,7 @@ namespace IM.Xades.Test
             xades2.Load(stream);
 
             var xerifier = new XadesVerifier();
-            xerifier.TrustedTsaCert = tsaCert;
+            xerifier.TrustedTsaCerts = tsaCerts;
             var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xades2)[0]);
 
             Assert.IsNotNull(info);
@@ -375,7 +462,7 @@ namespace IM.Xades.Test
             Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
         }
 
-        //[TestMethod]
+        [TestMethod]
         public void CreatXadesTTest()
         {
 
