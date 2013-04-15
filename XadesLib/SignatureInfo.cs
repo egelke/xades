@@ -73,6 +73,12 @@ namespace IM.Xades
 
         private ManifestResult[] manifestResults;
 
+        /// <summary>
+        /// The results of the manifest reference validation.
+        /// </summary>
+        /// <value><c>null</c> if no manifest was validated, otherwise list of <see cref="ManifestResult"/>, can be empty.</value>
+        /// <see cref="XadesVerifier.VerifyManifest"/>
+        /// <seealso href="http://www.w3.org/TR/2000/WD-xmldsig-core-20000510/#sec-Manifest"/>
         public ManifestResult[] ManifestResult
         {
             get { return manifestResults; }
