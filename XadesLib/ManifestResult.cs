@@ -6,10 +6,17 @@ using System.Xml;
 
 namespace IM.Xades
 {
+    /// <summary>
+    /// Information about the validation of a manifest in XMLDSig.
+    /// </summary>
     public class ManifestResult
     {
         private static XmlNamespaceManager nsMgr;
 
+        /// <summary>
+        /// XML Namesapce Manager with the prefix declarations of the Reference XPath.
+        /// </summary>
+        /// <see cref="ReferenceXpath"/>
         public static XmlNamespaceManager NsMgr
         {
             get { return nsMgr; }
@@ -24,6 +31,11 @@ namespace IM.Xades
 
         private String referenceXpath;
 
+        /// <summary>
+        /// The XPath to the reference that was validated.  The prefixes are defined
+        /// in the NsMgr field.
+        /// </summary>
+        /// <see cref="NsMgr"/>
         public String ReferenceXpath
         {
             get { return referenceXpath; }
@@ -31,6 +43,9 @@ namespace IM.Xades
 
         private ManifestResultStatus status;
 
+        /// <summary>
+        /// The outcome of the reference validation.
+        /// </summary>
         public ManifestResultStatus Status
         {
             get { return status; }

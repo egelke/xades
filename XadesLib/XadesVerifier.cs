@@ -123,6 +123,16 @@ namespace IM.Xades
             }
         }
 
+        /// <summary>
+        /// Indicate if the manifest refences must be validated or not.
+        /// </summary>
+        /// <remarks>
+        /// Validating the manifest references does not change the validation of the signature.  Instead the validation result of
+        /// each references in the manifest is reported in the result.
+        /// </remarks>
+        /// <value><c>false</c> (default) do not valide the manifest references, <c>true</c> validate the manifest references</value>
+        /// <see cref="SignatureInfo.ManifestResult"/>
+        /// <seealso href="http://www.w3.org/TR/2000/WD-xmldsig-core-20000510/#sec-Manifest"/>
         public bool VerifyManifest
         {
             get
