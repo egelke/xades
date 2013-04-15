@@ -10,7 +10,7 @@ namespace IM.Xades
     {
         private static XmlNamespaceManager nsMgr;
 
-        private static XmlNamespaceManager NsMgr
+        public static XmlNamespaceManager NsMgr
         {
             get { return nsMgr; }
         }

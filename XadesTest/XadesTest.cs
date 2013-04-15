@@ -196,7 +196,8 @@ namespace IM.Xades.Test
             xerifier.RevocationMode = X509RevocationMode.NoCheck;
             xerifier.VerifyManifest = true;
             xerifier.TrustedTsaCerts = tsaCerts;
-            var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xadesDoc)[0]);
+            XmlElement xadesElement = (XmlElement)XadesTools.FindXadesProperties(xadesDoc)[0];
+            var info = xerifier.Verify(document, xadesElement);
 
             Assert.IsNotNull(info);
             Assert.IsNotNull(info.Certificate);
@@ -204,6 +205,8 @@ namespace IM.Xades.Test
             Assert.IsNotNull(info.Time);
             Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
             Assert.AreEqual(ManifestResultStatus.Valid, info.ManifestResult[0].Status);
+            Assert.IsNotNull(xadesDoc.SelectSingleNode(info.ManifestResult[0].ReferenceXpath, ManifestResult.NsMgr));
+            Assert.IsNotNull(xadesElement.SelectSingleNode(info.ManifestResult[0].ReferenceXpath, ManifestResult.NsMgr));
         }
 
         [TestMethod]

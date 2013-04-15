@@ -314,10 +314,8 @@ namespace IM.Xades
                         {
                             status = ManifestResultStatus.Invalid;
                         }
-                        String xpath = String.Format("//ds:Manifest[@Id='{0}']/ds:Reference[{1}]", manifestId, manifestRefIndex);
+                        String xpath = String.Format("//ds:Signature[@Id='{0}']/ds:Object/ds:Manifest[@Id='{1}']/ds:Reference[{2}]", targetRef.Substring(1), manifestId, ++manifestRefIndex);
                         manifestResults.Add(new ManifestResult(xpath, status));
-
-                        manifestRefIndex++;
                     }
                 }
             }
