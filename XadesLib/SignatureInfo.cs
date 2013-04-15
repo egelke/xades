@@ -43,7 +43,6 @@ namespace IM.Xades
         public XadesForm Form
         {
             get { return form; }
-            set { form = value; }
         }
 
         private X509Certificate2 certificate;
@@ -57,7 +56,6 @@ namespace IM.Xades
         public X509Certificate2 Certificate
         {
             get { return certificate; }
-            set { certificate = value; }
         }
 
         private DateTimeOffset? time;
@@ -71,14 +69,21 @@ namespace IM.Xades
         public DateTimeOffset? Time
         {
             get { return time; }
-            set { time = value; }
         }
 
-        internal SignatureInfo(XadesForm form, X509Certificate2 certificate, DateTimeOffset? time)
+        private ManifestResult[] manifestResults;
+
+        public ManifestResult[] ManifestResult
+        {
+            get { return manifestResults; }
+        }
+
+        internal SignatureInfo(XadesForm form, X509Certificate2 certificate, DateTimeOffset? time, ManifestResult[] manifestResults)
         {
             this.form = form;
             this.certificate = certificate;
             this.time = time;
+            this.manifestResults = manifestResults;
         }
     }
 }

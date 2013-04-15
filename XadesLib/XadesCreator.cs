@@ -131,7 +131,7 @@ namespace IM.Xades
         /// <remarks>
         /// <para>
         /// In order to be able to sign the certificate must have a private key linked to it.  Certificate can either be retrieved from
-        /// the windows key store or from a pkcs#11 file.
+        /// the windows key store or from a pkcs#12 file.
         /// </para>
         /// <para>
         /// Microsoft uses cryptographic providers to keep the keys.  The default crypto provider does not support SHA-256 and is therefore

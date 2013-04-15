@@ -33,6 +33,7 @@ using System.IO;
 using Org.BouncyCastle.Tsp;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.X509.Store;
+using System.Reflection;
 
 namespace IM.Xades
 {
@@ -56,9 +57,11 @@ namespace IM.Xades
 
         private TimeSpan timestampGracePeriod;
 
-        private X509Certificate2 trustedTsaCert;
+        private List<X509Certificate2> trustedTsaCerts;
 
         private X509RevocationMode revocationMode;
+
+        private bool verifyManifest;
 
         /// <summary>
         /// The allowed time difference between the reported time and the time in the timestamp.
@@ -81,21 +84,22 @@ namespace IM.Xades
         }
 
         /// <summary>
-        /// Set to trust a specific Timestamp authority.
+        /// Set to trust a list of specific Timestamp authority.
         /// </summary>
         /// <remarks>
-        /// When you want to trust a specific timestamp authority, or the timestamp token does not contain the
-        /// certificates, this property can be used to trust a specific (single) TSA.
+        /// When you want to trust one or more specific timestamp authority, or the timestamp token does not contain the
+        /// certificates, this property can be used to trust a specific list of specific TSA.
         /// </remarks>
-        public X509Certificate2 TrustedTsaCert
+        /// <value><c>null</c> to trust the timestamps that have a certificates embedded and that are trusted by the computer, a list of trusted signers</value>
+        public List<X509Certificate2> TrustedTsaCerts
         {
             get
             {
-                return trustedTsaCert;
+                return trustedTsaCerts;
             }
             set
             {
-                trustedTsaCert = value;
+                trustedTsaCerts = value;
             }
         }
 
@@ -119,6 +123,18 @@ namespace IM.Xades
             }
         }
 
+        public bool VerifyManifest
+        {
+            get
+            {
+                return verifyManifest;
+            }
+            set
+            {
+                verifyManifest = value;
+            }
+        }
+
         /// <summary>
         /// Default constructor.
         /// </summary>
@@ -129,6 +145,7 @@ namespace IM.Xades
         {
             timestampGracePeriod = new TimeSpan(0, 10, 0);
             revocationMode = X509RevocationMode.Online;
+            verifyManifest = false;
 
             var doc = new XmlDocument();
             nsMgr = new XmlNamespaceManager(doc.NameTable);
@@ -258,6 +275,53 @@ namespace IM.Xades
             }
             if (!valid) throw new XadesValidationException("The signature is invalid");
 
+            //Verify the manifests if present.
+            List<ManifestResult> manifestResults = null;
+            if (verifyManifest)
+            {
+                manifestResults = new List<ManifestResult>();
+                XmlNodeList manifestNodes = signatureNode.SelectNodes("./ds:Object/ds:Manifest", nsMgr);
+                foreach (XmlNode manifestNode in manifestNodes)
+                {
+                    if (manifestNode.Attributes["Id"] == null) throw new NotSupportedException("The Xades library only supports manifests with and Id");
+
+                    int manifestRefIndex = 0;
+                    String manifestId = manifestNode.Attributes["Id"].Value;
+                    XmlNodeList manifestRefNodes = manifestNode.SelectNodes("./ds:Reference", nsMgr);
+                    foreach (XmlNode manifestRefNode in manifestRefNodes)
+                    {
+                        Reference manifestRef = new Reference();
+                        manifestRef.LoadXml((XmlElement)manifestRefNode);
+                        byte[] orgValue = manifestRef.DigestValue;
+
+                        SignedXml signatureTmp = new SignedXml(doc);
+                        signatureTmp.AddReference(manifestRef);
+                        try
+                        {
+                            signatureTmp.ComputeSignature(new HMACMD5()); //we don't need the signature, so it can be as weak as it wants.
+                        }
+                        catch (CryptographicException ce)
+                        {
+                            throw new InvalidXadesException("The the reference " + manifestRefIndex + " of manifest " + manifestNode.Attributes["Id"].Value + " can't be validated", ce);
+                        }
+
+                        ManifestResultStatus status;
+                        if (orgValue.SequenceEqual(manifestRef.DigestValue))
+                        {
+                            status = ManifestResultStatus.Valid;
+                        }
+                        else
+                        {
+                            status = ManifestResultStatus.Invalid;
+                        }
+                        String xpath = String.Format("//ds:Manifest[@Id='{0}']/ds:Reference[{1}]", manifestId, manifestRefIndex);
+                        manifestResults.Add(new ManifestResult(xpath, status));
+
+                        manifestRefIndex++;
+                    }
+                }
+            }
+
             //Signing time retreval
             DateTimeOffset? signingTime = null;
             XmlNode signingTimeTxtNode = xadesProps.SelectSingleNode("./xades:SignedProperties/xades:SignedSignatureProperties/xades:SigningTime/text()", nsMgr);
@@ -329,7 +393,7 @@ namespace IM.Xades
                         }
 
                         //verify timestamp certificate
-                        if (trustedTsaCert == null)
+                        if (trustedTsaCerts == null)
                         {
                             IX509Store store = tst.GetCertificates("Collection");
                             ICollection signers = store.GetMatches(tst.SignerID);
@@ -369,14 +433,25 @@ namespace IM.Xades
                         else
                         {
                             Org.BouncyCastle.X509.X509CertificateParser bcCertParser = new Org.BouncyCastle.X509.X509CertificateParser();
-                            Org.BouncyCastle.X509.X509Certificate bcTrustedTsa = bcCertParser.ReadCertificate(trustedTsaCert.GetRawCertData());
-                            try
+                            List<Org.BouncyCastle.X509.X509Certificate> bcTrustedTsaCerts = new List<Org.BouncyCastle.X509.X509Certificate>();
+                            foreach(X509Certificate2 trustedTsaCert in trustedTsaCerts)
                             {
-                                tst.Validate(bcTrustedTsa);
+                                bcTrustedTsaCerts.Add(bcCertParser.ReadCertificate(trustedTsaCert.GetRawCertData()));
                             }
-                            catch (Exception e)
-                            {
-                                throw new XadesValidationException("The timestamp isn't issued by the trusted TSA", e);
+                            IX509Store bcTrustedTsaCertStore = X509StoreFactory.Create("Certificate/Collection",new X509CollectionStoreParameters(bcTrustedTsaCerts));
+                            IEnumerator tsaSigners = bcTrustedTsaCertStore.GetMatches(tst.SignerID).GetEnumerator();
+
+                            if (tsaSigners.MoveNext()) {
+                                try
+                                {
+                                    tst.Validate((Org.BouncyCastle.X509.X509Certificate)tsaSigners.Current);
+                                }
+                                catch (Exception e)
+                                {
+                                    throw new XadesValidationException("The timestamp isn't issued by the trusted TSA that was indicated as the signer", e);
+                                }
+                            } else {
+                                throw new XadesValidationException("The timestamp isn't issued by one of the trusted TSA");
                             }
                         }
                     }
@@ -412,7 +487,7 @@ namespace IM.Xades
             }
             if (usedCerts.Count > 0) throw new XadesValidationException("Xades contains info contains references to unused certificates");
 
-            return new SignatureInfo(form, signingCert, signingTime);
+            return new SignatureInfo(form, signingCert, signingTime, manifestResults == null ? null : manifestResults.ToArray());
         }
     }
 }

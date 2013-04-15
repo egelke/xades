@@ -81,13 +81,20 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="data\documentInval.xml" />
     <Content Include="data\document.xml" />
+    <Content Include="data\part2.xml" />
+    <Content Include="data\part1.xml" />
     <Content Include="license.txt" />
     <Content Include="Siemens.EHealth.Client.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Include="data\MYCARENET.p12" />
     <None Include="data\tsa.crt" />
+    <None Include="data\tsa\cert1.crt" />
+    <None Include="data\tsa\cert2.crt" />
+    <None Include="data\tsa\cert3.crt" />
+    <None Include="data\tsa\cert4.crt" />
     <None Include="Service References\IntModule\IM.Xades.Test.IntModule.VerificationResult.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
@@ -97,14 +104,14 @@
     </None>
     <None Include="Service References\IntModule\configuration.svcinfo" />
     <None Include="Service References\IntModule\configuration91.svcinfo" />
+    <None Include="Service References\IntModule\XadesTools.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Service References\IntModule\XadesTools1.wsdl" />
     <None Include="Service References\IntModule\XadesTools4.xsd">
       <SubType>Designer</SubType>
     </None>
     <None Include="Service References\IntModule\XadesTools41.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Service References\IntModule\XadesTools42.xsd">
       <SubType>Designer</SubType>
     </None>
     <None Include="Service References\IntModule\XadesTools43.xsd">
