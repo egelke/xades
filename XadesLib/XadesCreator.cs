@@ -27,7 +27,6 @@ using System.Reflection;
 using System.IO;
 using System.Globalization;
 using System.Security.Cryptography;
-using Security.Cryptography;
 using System.Numerics;
 
 namespace IM.Xades
@@ -44,7 +43,7 @@ namespace IM.Xades
     {
         static XadesCreator()
         {
-            CryptoConfig.AddAlgorithm(typeof(RSAPKCS1SHA256SignatureDescription), "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256");
+            CryptoConfig.AddAlgorithm(typeof(Extra.RSAPKCS1SHA256SignatureDescription), "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256");
         }
 
         private XmlNamespaceManager nsMgr;

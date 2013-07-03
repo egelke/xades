@@ -45,13 +45,9 @@
     <AssemblyOriginatorKeyFile>sign.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="BouncyCastle.Crypto, Version=1.7.4114.6375, Culture=neutral, PublicKeyToken=0e99375e54769942">
+    <Reference Include="BouncyCastle.Crypto, Version=1.7.4137.9688, Culture=neutral, PublicKeyToken=a4292a325f69b123, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>.\BouncyCastle.Crypto.dll</HintPath>
-    </Reference>
-    <Reference Include="Security.Cryptography, Version=1.6.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>.\Security.Cryptography.dll</HintPath>
+      <HintPath>..\packages\BouncyCastle.1.7.0\lib\Net40-Client\BouncyCastle.Crypto.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -67,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extra\OptionalDeflateTransform.cs" />
+    <Compile Include="Extra\RSAPKCS1SHA256SignatureDescription.cs" />
     <Compile Include="Extra\XadesTools.cs" />
     <Compile Include="InvalidXadesException.cs" />
     <Compile Include="ManifestResult.cs" />
@@ -90,7 +87,9 @@
     <Compile Include="XadesVerifier.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="sign.snk" />
+    <None Include="XadesLib.nuspec" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -99,7 +98,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="BouncyCastle.Crypto.dll" />
     <Content Include="license.txt" />
     <Content Include="Resources\QualifyingProperties.xml">
       <SubType>Designer</SubType>
@@ -107,9 +105,14 @@
     <Content Include="Resources\Timestamp.xml">
       <SubType>Designer</SubType>
     </Content>
-    <Content Include="Security.Cryptography.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>nuget pack "$(ProjectPath)" -IncludeReferencedProjects -Prop Configuration=$(ConfigurationName)</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
