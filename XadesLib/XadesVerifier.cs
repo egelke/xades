@@ -23,7 +23,6 @@ using System.Text;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
 using System.Security.Cryptography;
-using Security.Cryptography;
 using IM.Xades.Internal;
 using IM.Xades.Extra;
 using System.Security.Cryptography.Xml;
