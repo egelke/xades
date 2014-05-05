@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("Beta")]
 [assembly: AssemblyCompany("I.M. vzw")]
 [assembly: AssemblyProduct("XadesLib")]
-[assembly: AssemblyCopyright("Copyright © I.M. vzw 2012-2013")]
+[assembly: AssemblyCopyright("Copyright © I.M. vzw 2012-2014")]
 
 [assembly: ComVisible(false)]
 
@@ -15,4 +15,4 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyVersion("2.0.0")]
 [assembly: AssemblyFileVersion("2.0.0")]
-[assembly: AssemblyInformationalVersion("2.0.0-Beta1")]
+[assembly: AssemblyInformationalVersion("2.0.0-Beta3")]

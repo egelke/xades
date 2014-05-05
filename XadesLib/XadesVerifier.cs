@@ -7,7 +7,7 @@
  *  the Free Software Foundation, either version 2.1 of the License, or
  *  (at your option) any later version.
  *
- *  Foobar is distributed in the hope that it will be useful,
+ *  Xades Lib  is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -33,6 +33,7 @@ using Org.BouncyCastle.Tsp;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.X509.Store;
 using System.Reflection;
+using Egelke.EHealth.Client.Pki;
 
 namespace IM.Xades
 {
@@ -56,20 +57,16 @@ namespace IM.Xades
 
         private TimeSpan timestampGracePeriod;
 
-        private List<X509Certificate2> trustedTsaCerts;
-
-        private X509RevocationMode revocationMode;
-
         private bool verifyManifest;
 
         /// <summary>
-        /// The allowed time difference between the reported time and the time in the timestamp.
+        /// The allowed time difference between the reported time and the time in the time-stamp.
         /// </summary>
         /// <remarks>
-        /// The provider or reported time is always somewhat before the time in the timestamp because the timestamp can only
+        /// The provider or reported time is always somewhat before the time in the time-stamp because the time-stamp can only
         /// be created afterward.  This property specifies how much before is acceptable.
         /// </remarks>
-        /// <value>Get or sets the timestamp grace period</value>
+        /// <value>Get or sets the time-stamp grace period</value>
         public TimeSpan TimestampGracePeriod
         {
             get
@@ -83,53 +80,13 @@ namespace IM.Xades
         }
 
         /// <summary>
-        /// Set to trust a list of specific Timestamp authority.
-        /// </summary>
-        /// <remarks>
-        /// When you want to trust one or more specific timestamp authority, or the timestamp token does not contain the
-        /// certificates, this property can be used to trust a specific list of specific TSA.
-        /// </remarks>
-        /// <value><c>null</c> to trust the timestamps that have a certificates embedded and that are trusted by the computer, a list of trusted signers</value>
-        public List<X509Certificate2> TrustedTsaCerts
-        {
-            get
-            {
-                return trustedTsaCerts;
-            }
-            set
-            {
-                trustedTsaCerts = value;
-            }
-        }
-
-        /// <summary>
-        /// Set the revocation mode of all certification revocation checks.
-        /// </summary>
-        /// <remarks>
-        /// The default value is online, requiring a connection to the internet.  The offline mode
-        /// requires that the crl's are imported in the windows certificate store in advance.  The
-        /// no-check mode deactives the revocation checks and should only be used for testing.
-        /// </remarks>
-        public X509RevocationMode RevocationMode
-        {
-            get
-            {
-                return revocationMode;
-            }
-            set
-            {
-                revocationMode = value;
-            }
-        }
-
-        /// <summary>
-        /// Indicate if the manifest refences must be validated or not.
+        /// Indicate if the manifest references must be validated or not.
         /// </summary>
         /// <remarks>
         /// Validating the manifest references does not change the validation of the signature.  Instead the validation result of
         /// each references in the manifest is reported in the result.
         /// </remarks>
-        /// <value><c>false</c> (default) do not valide the manifest references, <c>true</c> validate the manifest references</value>
+        /// <value><c>false</c> (default) do not validate the manifest references, <c>true</c> validate the manifest references</value>
         /// <see cref="SignatureInfo.ManifestResult"/>
         /// <seealso href="http://www.w3.org/TR/2000/WD-xmldsig-core-20000510/#sec-Manifest"/>
         public bool VerifyManifest
@@ -153,7 +110,6 @@ namespace IM.Xades
         public XadesVerifier()
         {
             timestampGracePeriod = new TimeSpan(0, 10, 0);
-            revocationMode = X509RevocationMode.Online;
             verifyManifest = false;
 
             var doc = new XmlDocument();
@@ -187,7 +143,7 @@ namespace IM.Xades
             if (xadesProps.LocalName != "QualifyingProperties" || xadesProps.NamespaceURI != "http://uri.etsi.org/01903/v1.3.2#") 
                 throw new InvalidXadesException("The provider xades properties aren't actually xades properties");
             
-            //Get the correpsonding signature of the xades props
+            //Get the corresponding signature of the xades props
             String targetRef;
             if (xadesProps.Attributes["Target"] == null) throw new InvalidXadesException("the XAdES Properties has no Target attribute defined");
             targetRef = xadesProps.Attributes["Target"].Value;
@@ -329,7 +285,7 @@ namespace IM.Xades
                 }
             }
 
-            //Signing time retreval
+            //Signing time retrieval
             DateTimeOffset? signingTime = null;
             XmlNode signingTimeTxtNode = xadesProps.SelectSingleNode("./xades:SignedProperties/xades:SignedSignatureProperties/xades:SigningTime/text()", nsMgr);
             if (signingTimeTxtNode != null)
@@ -342,7 +298,7 @@ namespace IM.Xades
            
             //TODO:check for EPES.
 
-            //check timestamp
+            //check time-stamp
             XmlNodeList timestamps = xadesProps.SelectNodes("./xades:UnsignedProperties/xades:UnsignedSignatureProperties/xades:SignatureTimeStamp", nsMgr);
             if (timestamps != null && timestamps.Count > 0)
             {
@@ -359,7 +315,7 @@ namespace IM.Xades
                     if (timestampC14NAlgo.GetType() != typeof(XmlDsigC14NTransform) && timestampC14NAlgo.GetType() != typeof(XmlDsigExcC14NTransform))
                         throw new InvalidXadesException(String.Format("The signature timestamp has a canonicalization method that isn't allowed {0}", timestampC14NAlgoNode.Value));
 
-                    //Serialize because the C14N overloads wich accepts lists is totaly wrong (it C14N's the document)
+                    //Serialize because the C14N overloads which accepts lists is totally wrong (it C14N's the document)
                     MemoryStream stream = new MemoryStream();
                     using (var writer = XmlWriter.Create(stream))
                     {
@@ -367,7 +323,7 @@ namespace IM.Xades
                     }
                     stream.Seek(0, SeekOrigin.Begin);
 
-                    //Canocalize the signature value
+                    //Canonicalize the signature value
                     timestampC14NAlgo.LoadInput(stream);
                     var canonicalized = (Stream)timestampC14NAlgo.GetOutput(typeof(Stream));
 
@@ -375,91 +331,29 @@ namespace IM.Xades
                     if (timestampValueTxtNode != null)
                     {
                         //Get the timestamp token
-                        TimeStampToken tst = new TimeStampToken(new Org.BouncyCastle.Cms.CmsSignedData(Convert.FromBase64String(timestampValueTxtNode.Value)));
+                        TimeStampToken tst = Convert.FromBase64String(timestampValueTxtNode.Value).ToTimeStampToken();
 
-                        //Compute the hash of the signature value, based on the hash algo in the timestamp
-                        if (tst.TimeStampInfo.HashAlgorithm.Parameters != DerNull.Instance)
-                            throw new NotSupportedException("Only hash algorithms without params are currently supported for timestamps"); //TODO: support algo's with params
-                        if (tst.TimeStampInfo.Nonce != null)
-                            throw new NotSupportedException("Timestamp with a nonce isn't supported"); //TODO: support nonce for timestamp
-                        var hashAlogOid = new Oid(tst.TimeStampInfo.HashAlgorithm.ObjectID.Id);
-                        var hashAlgo = (HashAlgorithm)CryptoConfig.CreateFromName(hashAlogOid.FriendlyName);
-                        byte[] signatureValueHashed = hashAlgo.ComputeHash(canonicalized);
-
-                        //verify the hash value
-                        byte[] timestampHash = tst.TimeStampInfo.TstInfo.MessageImprint.GetHashedMessage();
-                        if (!((IStructuralEquatable)signatureValueHashed).Equals(timestampHash, StructuralComparisons.StructuralEqualityComparer))
+                        if (!tst.IsMatch(canonicalized))
                             throw new XadesValidationException("The timestamp doesn't match the signature value");
 
+                        //verify the time-stamp
+                        Timestamp ts = tst.Validate();
+                        if (ts.TimestampStatus.Count(x => x.Status != X509ChainStatusFlags.NoError) > 0)
+                            throw new XadesValidationException(String.Format("The timestamp TSA has an invalid status {0}: {1}",
+                                   ts.TimestampStatus[0].Status, ts.TimestampStatus[0].StatusInformation));
+                        foreach (ChainElement chainE in ts.CertificateChain.ChainElements)
+                        {
+                            if (chainE.ChainElementStatus.Count(x => x.Status != X509ChainStatusFlags.NoError) > 0)
+                                throw new XadesValidationException(String.Format("The timestamp TSA chain contains an invalid certificate '{0}' ({1}: {2})",
+                                    chainE.Certificate.Subject, chainE.ChainElementStatus[0].Status, chainE.ChainElementStatus[0].StatusInformation));
+                        }
+
                         //check the timestamp token against the signing time.
-                        DateTime tsTime = tst.TimeStampInfo.GenTime;
+                        DateTime tsTime = ts.Time;
                         if (signingTime == null)
                         {
                             DateTime signingTimeUtc = signingTime.Value.UtcDateTime;
-                            if (Math.Abs((tsTime - signingTimeUtc).TotalSeconds) > timestampGracePeriod.TotalSeconds) throw new XadesValidationException("The signature timestamp it to old with regards to the siging time");
-                        }
-
-                        //verify timestamp certificate
-                        if (trustedTsaCerts == null)
-                        {
-                            IX509Store store = tst.GetCertificates("Collection");
-                            ICollection signers = store.GetMatches(tst.SignerID);
-                            if (signers.Count == 0) throw new InvalidOperationException("No certificates present in the timestamp and not trusted TSA certificate provided, please provide a trusted TSA certificate");
-                            if (signers.Count > 1) throw new InvalidOperationException("Multiple matching certificates present in the timstamp");
-
-                            foreach(Org.BouncyCastle.X509.X509Certificate cert in signers)
-                            {
-                                try
-                                {
-                                    tst.Validate((Org.BouncyCastle.X509.X509Certificate)cert);
-                                }
-                                catch (Exception e)
-                                {
-                                    throw new XadesValidationException("The timestamp isn't issued by the TSA provided in the timestamp", e);
-                                }
-                            }
-
-                            X509Chain tsaChain = new X509Chain();
-                            foreach(Org.BouncyCastle.X509.X509Certificate cert in store.GetMatches(null)) 
-                            {
-                                tsaChain.ChainPolicy.ExtraStore.Add(new X509Certificate2(cert.GetEncoded()));
-                            }
-                            tsaChain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
-                            tsaChain.ChainPolicy.RevocationMode = revocationMode; //TODO: configurable
-                            tsaChain.ChainPolicy.VerificationFlags = X509VerificationFlags.NoFlag; //TODO: configurable
-                            tsaChain.ChainPolicy.VerificationTime = tst.TimeStampInfo.GenTime;
-                            tsaChain.Build(signingCert);
-
-                            foreach (X509ChainElement chainE in tsaChain.ChainElements)
-                            {
-                                if (chainE.ChainElementStatus.Length > 0 && chainE.ChainElementStatus[0].Status != X509ChainStatusFlags.NoError)
-                                    throw new XadesValidationException(String.Format("The timestamp TSA chain contains an invalid certificate '{0}' ({1}: {2})",
-                                        chainE.Certificate.Subject, chainE.ChainElementStatus[0].Status, chainE.ChainElementStatus[0].StatusInformation));
-                            }
-                        }
-                        else
-                        {
-                            Org.BouncyCastle.X509.X509CertificateParser bcCertParser = new Org.BouncyCastle.X509.X509CertificateParser();
-                            List<Org.BouncyCastle.X509.X509Certificate> bcTrustedTsaCerts = new List<Org.BouncyCastle.X509.X509Certificate>();
-                            foreach(X509Certificate2 trustedTsaCert in trustedTsaCerts)
-                            {
-                                bcTrustedTsaCerts.Add(bcCertParser.ReadCertificate(trustedTsaCert.GetRawCertData()));
-                            }
-                            IX509Store bcTrustedTsaCertStore = X509StoreFactory.Create("Certificate/Collection",new X509CollectionStoreParameters(bcTrustedTsaCerts));
-                            IEnumerator tsaSigners = bcTrustedTsaCertStore.GetMatches(tst.SignerID).GetEnumerator();
-
-                            if (tsaSigners.MoveNext()) {
-                                try
-                                {
-                                    tst.Validate((Org.BouncyCastle.X509.X509Certificate)tsaSigners.Current);
-                                }
-                                catch (Exception e)
-                                {
-                                    throw new XadesValidationException("The timestamp isn't issued by the trusted TSA that was indicated as the signer", e);
-                                }
-                            } else {
-                                throw new XadesValidationException("The timestamp isn't issued by one of the trusted TSA");
-                            }
+                            if (Math.Abs((tsTime - signingTimeUtc).TotalSeconds) > timestampGracePeriod.TotalSeconds) throw new XadesValidationException("The signature timestamp it to old with regards to the signing time");
                         }
                     }
                     else
@@ -475,9 +369,6 @@ namespace IM.Xades
             //TODO:support profiles > XAdES-T
             X509Chain chain = new X509Chain();
             chain.ChainPolicy.ExtraStore.AddRange(includedCerts);
-            chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
-            chain.ChainPolicy.RevocationMode = revocationMode; //TODO: configurable
-            chain.ChainPolicy.VerificationFlags = X509VerificationFlags.NoFlag; //TODO: configurable
             chain.ChainPolicy.VerificationTime = signingTime == null? DateTime.Now : signingTime.Value.LocalDateTime;
             chain.Build(signingCert);  //check each cert instead of the result
 

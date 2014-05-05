@@ -45,9 +45,11 @@
     <AssemblyOriginatorKeyFile>sign.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="BouncyCastle.Crypto, Version=1.7.4137.9688, Culture=neutral, PublicKeyToken=a4292a325f69b123, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\BouncyCastle.1.7.0\lib\Net40-Client\BouncyCastle.Crypto.dll</HintPath>
+    <Reference Include="crypto">
+      <HintPath>..\packages\BouncyCastle-Patch.1.7.0\lib\net40\crypto.dll</HintPath>
+    </Reference>
+    <Reference Include="Egelke.EHealth.Client.Pki">
+      <HintPath>..\packages\Egelke.EHealth.Client.Pki.1.0.0\lib\net40-Client\Egelke.EHealth.Client.Pki.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -68,18 +70,13 @@
     <Compile Include="InvalidXadesException.cs" />
     <Compile Include="ManifestResult.cs" />
     <Compile Include="ManifestResultStatus.cs" />
-    <Compile Include="TSA\DssTimestampProvider.cs" />
     <Compile Include="Internal\ExtendedSignedXml.cs" />
-    <Compile Include="TSA\EHealthTimestampProvider.cs" />
-    <Compile Include="TSA\ITimestampProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="TSA\Rfc3161TimestampProvider.cs" />
-    <Compile Include="TSA\TimeStampAuthority.cs" />
     <Compile Include="XadesCreator.cs" />
     <Compile Include="SignatureInfo.cs" />
     <Compile Include="XadesForm.cs" />
@@ -98,7 +95,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Contributors.html" />
+    <Content Include="License.html" />
     <Content Include="license.txt" />
+    <Content Include="Readme.html" />
     <Content Include="Resources\QualifyingProperties.xml">
       <SubType>Designer</SubType>
     </Content>
@@ -111,7 +111,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>nuget pack "$(ProjectPath)" -IncludeReferencedProjects -Prop Configuration=$(ConfigurationName)</PostBuildEvent>
+    <PostBuildEvent>nuget pack "$(ProjectPath)" -IncludeReferencedProjects -Prop Configuration=$(ConfigurationName)
+nuget pack "$(ProjectPath)"  -Symbols</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
