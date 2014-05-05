@@ -28,6 +28,7 @@ using System.IO;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Numerics;
+using Egelke.EHealth.Client.Pki;
 
 namespace IM.Xades
 {
@@ -57,7 +58,7 @@ namespace IM.Xades
 
         private X509Certificate2 certificate;
         private List<Transform> dataTransforms;
-        private TSA.ITimestampProvider timestampProvider;
+        private ITimestampProvider timestampProvider;
 
         /// <summary>
         /// The certificate with private key to sign with.
@@ -112,7 +113,7 @@ namespace IM.Xades
         /// <seealso cref="TSA.DssTimestampProvider"/>
         /// <seealso cref="TSA.EHealthTimestampProvider"/>
         /// <value>Get or set the instance to the timestamp provider or null</value>
-        public TSA.ITimestampProvider TimestampProvider
+        public ITimestampProvider TimestampProvider
         {
             get
             {
