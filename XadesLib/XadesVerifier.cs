@@ -55,10 +55,6 @@ namespace IM.Xades
 
         private XmlNamespaceManager nsMgr;
 
-        private TimeSpan timestampGracePeriod;
-
-        private bool verifyManifest;
-
         /// <summary>
         /// The allowed time difference between the reported time and the time in the time-stamp.
         /// </summary>
@@ -67,17 +63,8 @@ namespace IM.Xades
         /// be created afterward.  This property specifies how much before is acceptable.
         /// </remarks>
         /// <value>Get or sets the time-stamp grace period</value>
-        public TimeSpan TimestampGracePeriod
-        {
-            get
-            {
-                return timestampGracePeriod;
-            }
-            set
-            {
-                timestampGracePeriod = value;
-            }
-        }
+        public TimeSpan TimestampGracePeriod { get; set; }
+
 
         /// <summary>
         /// Indicate if the manifest references must be validated or not.
@@ -89,17 +76,9 @@ namespace IM.Xades
         /// <value><c>false</c> (default) do not validate the manifest references, <c>true</c> validate the manifest references</value>
         /// <see cref="SignatureInfo.ManifestResult"/>
         /// <seealso href="http://www.w3.org/TR/2000/WD-xmldsig-core-20000510/#sec-Manifest"/>
-        public bool VerifyManifest
-        {
-            get
-            {
-                return verifyManifest;
-            }
-            set
-            {
-                verifyManifest = value;
-            }
-        }
+        public bool VerifyManifest { get; set; }
+
+        public X509Certificate2Collection ExtraStore { get; set; }
 
         /// <summary>
         /// Default constructor.
@@ -109,8 +88,9 @@ namespace IM.Xades
         /// </remarks>
         public XadesVerifier()
         {
-            timestampGracePeriod = new TimeSpan(0, 10, 0);
-            verifyManifest = false;
+            TimestampGracePeriod = new TimeSpan(0, 10, 0);
+            VerifyManifest = false;
+            ExtraStore = null;
 
             var doc = new XmlDocument();
             nsMgr = new XmlNamespaceManager(doc.NameTable);
@@ -154,6 +134,7 @@ namespace IM.Xades
             //Load the signature
             var signature = new SignedXml(doc);
             signature.LoadXml(signatureNode);
+            signature.SafeCanonicalizationMethods.Add(OptionalDeflateTransform.AlgorithmUri);
 
             //check if the signature contains a reference to the xades signed props.
             var xadesRef = new Reference();
@@ -236,13 +217,13 @@ namespace IM.Xades
             while (!valid && vce.MoveNext())
             {
                 signingCert = vce.Current;
-                valid = signature.CheckSignature(signingCert, true);
+                valid = signature.CheckSignature(signingCert.PublicKey.Key);
             }
             if (!valid) throw new XadesValidationException("The signature is invalid");
 
             //Verify the manifests if present.
             List<ManifestResult> manifestResults = null;
-            if (verifyManifest)
+            if (VerifyManifest)
             {
                 manifestResults = new List<ManifestResult>();
                 XmlNodeList manifestNodes = signatureNode.SelectNodes("./ds:Object/ds:Manifest", nsMgr);
@@ -337,7 +318,7 @@ namespace IM.Xades
                             throw new XadesValidationException("The timestamp doesn't match the signature value");
 
                         //verify the time-stamp
-                        Timestamp ts = tst.Validate();
+                        Timestamp ts = tst.Validate(ExtraStore);
                         if (ts.TimestampStatus.Count(x => x.Status != X509ChainStatusFlags.NoError) > 0)
                             throw new XadesValidationException(String.Format("The timestamp TSA has an invalid status {0}: {1}",
                                    ts.TimestampStatus[0].Status, ts.TimestampStatus[0].StatusInformation));
@@ -353,7 +334,7 @@ namespace IM.Xades
                         if (signingTime == null)
                         {
                             DateTime signingTimeUtc = signingTime.Value.UtcDateTime;
-                            if (Math.Abs((tsTime - signingTimeUtc).TotalSeconds) > timestampGracePeriod.TotalSeconds) throw new XadesValidationException("The signature timestamp it to old with regards to the signing time");
+                            if (Math.Abs((tsTime - signingTimeUtc).TotalSeconds) > TimestampGracePeriod.TotalSeconds) throw new XadesValidationException("The signature timestamp it to old with regards to the signing time");
                         }
                     }
                     else
@@ -365,26 +346,21 @@ namespace IM.Xades
                 }
             }
 
-            //Certificate validation
+            //check check the chain
             //TODO:support profiles > XAdES-T
-            X509Chain chain = new X509Chain();
-            chain.ChainPolicy.ExtraStore.AddRange(includedCerts);
-            chain.ChainPolicy.VerificationTime = signingTime == null? DateTime.Now : signingTime.Value.LocalDateTime;
-            chain.Build(signingCert);  //check each cert instead of the result
+            Chain chain = signingCert.BuildChain(signingTime == null ? DateTime.Now : signingTime.Value.LocalDateTime,
+                includedCerts);
+            if (chain.ChainStatus.Count(x => x.Status != X509ChainStatusFlags.NoError) > 0)
+                throw new XadesValidationException(String.Format("The signing certificate chain is invalid ({1}: {2})",
+                        chain.ChainStatus[0].Status, chain.ChainStatus[0].StatusInformation));
 
-            //check the status of the individual certificates
-            X509Certificate2[] usedCertArray = new X509Certificate2[verifiedCerts.Count];
-            verifiedCerts.CopyTo(usedCertArray, 0);
-            X509Certificate2Collection usedCerts = new X509Certificate2Collection(usedCertArray);
-            foreach(X509ChainElement chainE in chain.ChainElements)
+            //check for unused certs
+            foreach (X509Certificate2 verifiedCert in verifiedCerts)
             {
-                if (chainE.ChainElementStatus.Length > 0 && chainE.ChainElementStatus[0].Status != X509ChainStatusFlags.NoError)
-                    throw new XadesValidationException(String.Format("The signing certificate chain contains an invalid certificate '{0}' ({1}: {2})",
-                        chainE.Certificate.Subject, chainE.ChainElementStatus[0].Status, chainE.ChainElementStatus[0].StatusInformation));
-                if (usedCerts.Contains(chainE.Certificate)) usedCerts.Remove(chainE.Certificate);
+                if (chain.ChainElements.Count(x => x.Certificate == verifiedCert) == 0)
+                    throw new XadesValidationException(String.Format("Xades contains info contains references to unused certificate: {0}", verifiedCert.Subject));
             }
-            if (usedCerts.Count > 0) throw new XadesValidationException("Xades contains info contains references to unused certificates");
-
+            
             return new SignatureInfo(form, signingCert, signingTime, manifestResults == null ? null : manifestResults.ToArray());
         }
     }

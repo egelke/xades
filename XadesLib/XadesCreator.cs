@@ -110,8 +110,9 @@ namespace IM.Xades
         /// XAdES-BES does not require property to be set.
         /// </para>
         /// </remarks>
-        /// <seealso cref="TSA.DssTimestampProvider"/>
-        /// <seealso cref="TSA.EHealthTimestampProvider"/>
+        /// <seealso cref="Egelke.EHealth.Client.Pki.Rfc3161TimestampProvider"/>
+        /// <seealso cref="Egelke.EHealth.Client.Pki.DssTimestampProvider"/>
+        /// <seealso cref="Egelke.EHealth.Client.Pki.EHealthTimestampProvider"/>
         /// <value>Get or set the instance to the timestamp provider or null</value>
         public ITimestampProvider TimestampProvider
         {
