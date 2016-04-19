@@ -25,12 +25,15 @@ using System.Text;
 using System.Security.Cryptography.Xml;
 using System.IO;
 using System.Xml.Serialization;
-using Siemens.EHealth.Client.Sso.Sts;
 using System.ServiceModel;
 using System.ServiceModel.Description;
-using Siemens.EHealth.Client.Sso.WA;
 using IM.Xades.Extra;
 using System.Collections.Generic;
+using Egelke.EHealth.Client.Pki.DSS;
+using Egelke.EHealth.Client.Sso.Sts;
+using Egelke.EHealth.Client.Sso.WA;
+using Egelke.EHealth.Client.Pki;
+using System.Linq;
 
 namespace IM.Xades.Test
 {
@@ -45,24 +48,18 @@ namespace IM.Xades.Test
 
         private static X509Certificate2 auth;
         private static X509Certificate2 sign;
-        private static List<X509Certificate2> tsaCerts;
-        private static TSA.DSS.TimeStampAuthorityClient tsa;
+        private static X509Certificate2Collection tsaCerts;
+        private static TimeStampAuthorityClient tsa;
         private static IntModule.XadesToolsClient im;
 
         [ClassInitialize]
         public static void MyClassInitialize(TestContext testContext)
         {
-            //load certificates (fixed)
-            auth = new X509Certificate2("MYCARENET.p12", "mycarenet");
+            var ehP12 = new EHealthP12("MYCARENET.p12", File.ReadLines("MYCARENET.pwd").First());
+            auth = ehP12["authentication"];
+            sign = ehP12["authentication"];
 
-            //load certificate (eid)
-            X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
-            store.Open(OpenFlags.ReadOnly);
-            X509Certificate2Collection canidateCerts = store.Certificates.Find(X509FindType.FindByKeyUsage, X509KeyUsageFlags.NonRepudiation, true);
-            X509Certificate2Collection selectedCerts = X509Certificate2UI.SelectFromCollection(canidateCerts, "Select cert", "Select your signing cert", X509SelectionFlag.SingleSelection);
-            sign = selectedCerts[0];
-
-            tsaCerts = new List<X509Certificate2>();
+            tsaCerts = new X509Certificate2Collection();
             foreach (String file in Directory.GetFiles("tsa"))
             {
                 tsaCerts.Add(new X509Certificate2(file));
@@ -85,7 +82,7 @@ namespace IM.Xades.Test
             }
 
             //create the tsa
-            tsa = new TSA.DSS.TimeStampAuthorityClient(new StsBinding(), new EndpointAddress("https://wwwacc.ehealth.fgov.be/timestampauthority_1_5/timestampauthority"));
+            tsa = new TimeStampAuthorityClient(new StsBinding(), new EndpointAddress("https://wwwacc.ehealth.fgov.be/timestampauthority_1_5/timestampauthority"));
             tsa.Endpoint.Behaviors.Remove<ClientCredentials>();
             tsa.Endpoint.Behaviors.Add(new OptClientCredentials());
             tsa.ClientCredentials.ClientCertificate.Certificate = auth;
@@ -193,9 +190,8 @@ namespace IM.Xades.Test
             xadesDoc.Load(new MemoryStream(xades));
 
             var xerifier = new XadesVerifier();
-            xerifier.RevocationMode = X509RevocationMode.NoCheck;
             xerifier.VerifyManifest = true;
-            xerifier.TrustedTsaCerts = tsaCerts;
+            xerifier.ExtraStore = tsaCerts;
             XmlElement xadesElement = (XmlElement)XadesTools.FindXadesProperties(xadesDoc)[0];
             var info = xerifier.Verify(document, xadesElement);
 
@@ -223,9 +219,8 @@ namespace IM.Xades.Test
             document.Load(@"documentInval.xml");
 
             var xerifier = new XadesVerifier();
-            xerifier.RevocationMode = X509RevocationMode.NoCheck;
             xerifier.VerifyManifest = true;
-            xerifier.TrustedTsaCerts = tsaCerts;
+            xerifier.ExtraStore = tsaCerts;
             var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xadesDoc)[0]);
 
             Assert.IsNotNull(info);
@@ -251,9 +246,8 @@ namespace IM.Xades.Test
             document.Load(@"part1.xml");
 
             var xerifier = new XadesVerifier();
-            xerifier.RevocationMode = X509RevocationMode.NoCheck;
             xerifier.VerifyManifest = true;
-            xerifier.TrustedTsaCerts = tsaCerts;
+            xerifier.ExtraStore = tsaCerts;
             var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xadesDoc)[0]);
         }
 
@@ -278,8 +272,7 @@ namespace IM.Xades.Test
             System.Console.WriteLine(xml.ToString());
 
             var xerifier = new XadesVerifier();
-            xerifier.RevocationMode = X509RevocationMode.NoCheck;
-            xerifier.TrustedTsaCerts = tsaCerts;
+            xerifier.ExtraStore = tsaCerts;
 
             //Uses a test certificate that isn't valid.
             var info = xerifier.Verify(document, (XmlElement) XadesTools.FindXadesProperties(xadesDoc)[0]);
@@ -295,7 +288,6 @@ namespace IM.Xades.Test
         public void RoundTestXadesBes()
         {
             var xigner = new XadesCreator(sign);
-            xigner.TimestampProvider = new TSA.EHealthTimestampProvider(tsa);
             xigner.DataTransforms.Add(new XmlDsigBase64Transform());
             xigner.DataTransforms.Add(new OptionalDeflateTransform());
             var xades = xigner.CreateXadesBes(document, "_D4840C96-8212-491C-9CD9-B7144C1AD450");
@@ -339,7 +331,7 @@ namespace IM.Xades.Test
         public void RountTestXadesTFullDoc()
         {
             var xigner = new XadesCreator(sign);
-            xigner.TimestampProvider = new TSA.EHealthTimestampProvider(tsa);
+            xigner.TimestampProvider = new EHealthTimestampProvider(tsa);
 
             var xades = xigner.CreateXadesT(document);
 
@@ -366,7 +358,6 @@ namespace IM.Xades.Test
             xades2.Load(stream);
 
             var xerifier = new XadesVerifier();
-            xerifier.TrustedTsaCerts = tsaCerts;
             var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xades2)[0]);
 
             Assert.IsNotNull(info);
@@ -381,7 +372,7 @@ namespace IM.Xades.Test
         public void RoundTestXadesT()
         {
             var xigner = new XadesCreator(sign);
-            xigner.TimestampProvider = new TSA.EHealthTimestampProvider(tsa);
+            xigner.TimestampProvider = new EHealthTimestampProvider(tsa);
             xigner.DataTransforms.Add(new XmlDsigBase64Transform());
             xigner.DataTransforms.Add(new OptionalDeflateTransform());
 
@@ -410,7 +401,6 @@ namespace IM.Xades.Test
             xades2.Load(stream);
 
             var xerifier = new XadesVerifier();
-            xerifier.TrustedTsaCerts = tsaCerts;
             var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xades2)[0]);
 
             Assert.IsNotNull(info);
@@ -425,7 +415,7 @@ namespace IM.Xades.Test
         public void RoundTestXadesTViaFedict()
         {
             var xigner = new XadesCreator(sign);
-            xigner.TimestampProvider = new TSA.Rfc3161TimestampProvider();
+            xigner.TimestampProvider = new Rfc3161TimestampProvider();
             xigner.DataTransforms.Add(new XmlDsigBase64Transform());
             xigner.DataTransforms.Add(new OptionalDeflateTransform());
             var xades = xigner.CreateXadesT(document, "_D4840C96-8212-491C-9CD9-B7144C1AD450");
@@ -470,7 +460,7 @@ namespace IM.Xades.Test
         {
 
             var xigner = new XadesCreator(sign);
-            xigner.TimestampProvider = new TSA.EHealthTimestampProvider(tsa);
+            xigner.TimestampProvider = new EHealthTimestampProvider(tsa);
             xigner.DataTransforms.Add(new XmlDsigBase64Transform());
             xigner.DataTransforms.Add(new OptionalDeflateTransform());
             var xades = xigner.CreateXadesT(document, "_D4840C96-8212-491C-9CD9-B7144C1AD450");

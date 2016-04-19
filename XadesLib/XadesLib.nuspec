@@ -11,8 +11,8 @@
     <iconUrl>https://nuget.org/Content/Images/packageDefaultIcon-50x50.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
-    <releaseNotes>Transformed Library into NuGet Package</releaseNotes>
-    <copyright>Copyright © Egelke BVBA 2013</copyright>
+    <releaseNotes>Taking into account security patches</releaseNotes>
+    <copyright>Copyright © Egelke BVBA 2013-2016</copyright>
     <tags>MyCareNet eSigning Xades XML</tags>
   </metadata>
 </package>
