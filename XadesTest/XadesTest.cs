@@ -17,7 +17,6 @@
  */
 
 using IM.Xades;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
@@ -31,260 +30,80 @@ using IM.Xades.Extra;
 using System.Collections.Generic;
 using Egelke.EHealth.Client.Pki.DSS;
 using Egelke.EHealth.Client.Sso.Sts;
-using Egelke.EHealth.Client.Sso.WA;
 using Egelke.EHealth.Client.Pki;
 using System.Linq;
+using Xunit;
 
 namespace IM.Xades.Test
 {
     
-    
-    [TestClass]
     public class XadesTest
     {
-        private static XmlDocument document;
-        private static IntModule.Blob detail;
-        private static IntModule.Blob detail2;
+        private XmlDocument document;
 
-        private static X509Certificate2 auth;
-        private static X509Certificate2 sign;
-        private static X509Certificate2Collection tsaCerts;
-        private static TimeStampAuthorityClient tsa;
-        private static IntModule.XadesToolsClient im;
+        private X509Certificate2 auth;
+        private X509Certificate2 sign;
+        private TimeStampAuthorityClient tsa;
 
-        [ClassInitialize]
-        public static void MyClassInitialize(TestContext testContext)
+        public XadesTest()
         {
-            var ehP12 = new EHealthP12("MYCARENET.p12", File.ReadLines("MYCARENET.pwd").First());
+            var ehP12 = new EHealthP12(@"data\MYCARENET.p12", File.ReadLines(@"data\MYCARENET.pwd").First());
             auth = ehP12["authentication"];
             sign = ehP12["authentication"];
-
-            tsaCerts = new X509Certificate2Collection();
-            foreach (String file in Directory.GetFiles("tsa"))
-            {
-                tsaCerts.Add(new X509Certificate2(file));
-            }
 
             //load test document as xml
             document = new XmlDocument();
             document.PreserveWhitespace = true;
-            document.Load(@"document.xml");
+            document.Load(@"data\document.xml");
 
-            //load the document as POCO
-            XmlSerializer serializer = new XmlSerializer(typeof(IntModule.Blob));
-            using (FileStream part1 = new FileStream(@"part1.xml", FileMode.Open))
-            {
-                detail = (IntModule.Blob)serializer.Deserialize(part1);
-            }
-            using (FileStream part2 = new FileStream(@"part2.xml", FileMode.Open))
-            {
-                detail2 = (IntModule.Blob)serializer.Deserialize(part2);
-            }
 
             //create the tsa
-            tsa = new TimeStampAuthorityClient(new StsBinding(), new EndpointAddress("https://wwwacc.ehealth.fgov.be/timestampauthority_1_5/timestampauthority"));
-            tsa.Endpoint.Behaviors.Remove<ClientCredentials>();
-            tsa.Endpoint.Behaviors.Add(new OptClientCredentials());
+            tsa = new TimeStampAuthorityClient(new StsBinding(), new EndpointAddress("https://services-acpt.ehealth.fgov.be/TimestampAuthority/v2"));
             tsa.ClientCredentials.ClientCertificate.Certificate = auth;
-
-            var binding = new WSHttpBinding(SecurityMode.TransportWithMessageCredential, false);
-            binding.MessageEncoding = WSMessageEncoding.Mtom;
-            binding.Security.Message.EstablishSecurityContext = false;
-            binding.Security.Message.ClientCredentialType = MessageCredentialType.Certificate;
-            im = new IntModule.XadesToolsClient(binding, new EndpointAddress("https://dev.mycarenet.be/im-ws/XadesTools"));
-            im.ClientCredentials.ClientCertificate.Certificate = auth;
         }
 
-        private TestContext testContextInstance;
 
-        public TestContext TestContext
-        {
-            get
-            {
-                return testContextInstance;
-            }
-            set
-            {
-                testContextInstance = value;
-            }
-        }
-
-        #region Additional test attributes
-        // 
-        //You can use the following additional attributes as you write your tests:
-        //
-        //Use ClassInitialize to run code before running the first test in the class
-        //[ClassInitialize()]
-        //public static void MyClassInitialize(TestContext testContext)
-        //{
-        //}
-        //
-        //Use ClassCleanup to run code after all tests in a class have run
-        //[ClassCleanup()]
-        //public static void MyClassCleanup()
-        //{
-        //}
-        //
-        //Use TestInitialize to run code before running each test
-        //[TestInitialize()]
-        //public void MyTestInitialize()
-        //{
-        //}
-        //
-        //Use TestCleanup to run code after each test has run
-        //[TestCleanup()]
-        //public void MyTestCleanup()
-        //{
-        //}
-        //
-        #endregion
-
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
+        [Fact]
         public void CreatorConstructorParamNull()
         {
-            new XadesCreator(null);
+            Assert.Throws<ArgumentNullException>(() => new XadesCreator(null));
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
+        /*
+        [Fact]
         public void CreatorConstructorParamInval()
         {
-            new XadesCreator(tsaCerts[0]);
+            Assert.Throws<ArgumentException>(() => new XadesCreator(tsaCerts[0]));
         }
+        */
 
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
+        [Fact]
         public void CreatorSignParamNull()
         {
             var xigner = new XadesCreator(sign);
 
-            xigner.CreateXadesBes(null);
+
+            Assert.Throws<ArgumentNullException>(() => xigner.CreateXadesBes(null));
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
+        [Fact]
         public void VerifierVerifyParam1Null()
         {
             var xerifer = new XadesVerifier();
 
-            xerifer.Verify(null, null);
+
+            Assert.Throws<ArgumentNullException>(() => xerifer.Verify(null, null));
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
+        [Fact]
         public void VerifierVerifyParam2Null()
         {
             var xerifer = new XadesVerifier();
 
-            xerifer.Verify(new XmlDocument(), null);
+            Assert.Throws<ArgumentNullException>(() => xerifer.Verify(new XmlDocument(), null));
         }
 
-        [TestMethod]
-        public void VerifyXadesTWithManifestTest()
-        {
-            byte[] xades = im.createXadesT(detail, detail2);
-
-            XmlDocument xadesDoc = new XmlDocument();
-            xadesDoc.PreserveWhitespace = true;
-            xadesDoc.Load(new MemoryStream(xades));
-
-            var xerifier = new XadesVerifier();
-            xerifier.VerifyManifest = true;
-            xerifier.ExtraStore = tsaCerts;
-            XmlElement xadesElement = (XmlElement)XadesTools.FindXadesProperties(xadesDoc)[0];
-            var info = xerifier.Verify(document, xadesElement);
-
-            Assert.IsNotNull(info);
-            Assert.IsNotNull(info.Certificate);
-            Assert.AreEqual(XadesForm.XadesT, info.Form);
-            Assert.IsNotNull(info.Time);
-            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
-            Assert.AreEqual(ManifestResultStatus.Valid, info.ManifestResult[0].Status);
-            Assert.IsNotNull(xadesDoc.SelectSingleNode(info.ManifestResult[0].ReferenceXpath, ManifestResult.NsMgr));
-            Assert.IsNotNull(xadesElement.SelectSingleNode(info.ManifestResult[0].ReferenceXpath, ManifestResult.NsMgr));
-        }
-
-        [TestMethod]
-        public void VerifyXadesTWithInvalidHashManifestTest()
-        {
-            byte[] xades = im.createXadesT(detail, detail2);
-
-            XmlDocument xadesDoc = new XmlDocument();
-            xadesDoc.PreserveWhitespace = true;
-            xadesDoc.Load(new MemoryStream(xades));
-
-            document = new XmlDocument();
-            document.PreserveWhitespace = true;
-            document.Load(@"documentInval.xml");
-
-            var xerifier = new XadesVerifier();
-            xerifier.VerifyManifest = true;
-            xerifier.ExtraStore = tsaCerts;
-            var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xadesDoc)[0]);
-
-            Assert.IsNotNull(info);
-            Assert.IsNotNull(info.Certificate);
-            Assert.AreEqual(XadesForm.XadesT, info.Form);
-            Assert.IsNotNull(info.Time);
-            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
-            Assert.AreEqual(ManifestResultStatus.Invalid, info.ManifestResult[0].Status);
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(InvalidXadesException))]
-        public void VerifyXadesTWithInvalidRefManifestTest()
-        {
-            byte[] xades = im.createXadesT(detail, detail2);
-
-            XmlDocument xadesDoc = new XmlDocument();
-            xadesDoc.PreserveWhitespace = true;
-            xadesDoc.Load(new MemoryStream(xades));
-
-            document = new XmlDocument();
-            document.PreserveWhitespace = true;
-            document.Load(@"part1.xml");
-
-            var xerifier = new XadesVerifier();
-            xerifier.VerifyManifest = true;
-            xerifier.ExtraStore = tsaCerts;
-            var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xadesDoc)[0]);
-        }
-
-        [TestMethod]
-        public void VerifyXadesTTest()
-        {
-            byte[] xades = im.createXadesT(detail, null);
-
-            XmlDocument xadesDoc = new XmlDocument();
-            xadesDoc.PreserveWhitespace = true;
-            xadesDoc.Load(new MemoryStream(xades));
-
-            var xml = new StringBuilder();
-            var writerSettings = new XmlWriterSettings
-            {
-                Indent = true
-            };
-            using (var writer = XmlWriter.Create(xml, writerSettings))
-            {
-                xadesDoc.WriteTo(writer);
-            }
-            System.Console.WriteLine(xml.ToString());
-
-            var xerifier = new XadesVerifier();
-            xerifier.ExtraStore = tsaCerts;
-
-            //Uses a test certificate that isn't valid.
-            var info = xerifier.Verify(document, (XmlElement) XadesTools.FindXadesProperties(xadesDoc)[0]);
-
-            Assert.IsNotNull(info);
-            Assert.IsNotNull(info.Certificate);
-            Assert.AreEqual(XadesForm.XadesT, info.Form);
-            Assert.IsNotNull(info.Time);
-            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
-        }
-
-        [TestMethod]
+        [Fact]
         public void RoundTestXadesBes()
         {
             var xigner = new XadesCreator(sign);
@@ -319,15 +138,15 @@ namespace IM.Xades.Test
             var xerifier = new XadesVerifier();
             var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xades2)[0]);
 
-            Assert.IsNotNull(info);
-            Assert.IsNotNull(info.Certificate);
-            Assert.AreEqual(sign, info.Certificate);
-            Assert.AreEqual(XadesForm.XadesBes, info.Form);
-            Assert.IsNotNull(info.Time);
-            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
+            Assert.NotNull(info);
+            Assert.NotNull(info.Certificate);
+            Assert.Equal(sign, info.Certificate);
+            Assert.Equal(XadesForm.XadesBes, info.Form);
+            Assert.NotNull(info.Time);
+            Assert.True((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
         }
 
-        [TestMethod]
+        [Fact]
         public void RountTestXadesTFullDoc()
         {
             var xigner = new XadesCreator(sign);
@@ -360,15 +179,15 @@ namespace IM.Xades.Test
             var xerifier = new XadesVerifier();
             var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xades2)[0]);
 
-            Assert.IsNotNull(info);
-            Assert.IsNotNull(info.Certificate);
-            Assert.AreEqual(sign, info.Certificate);
-            Assert.AreEqual(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
-            Assert.IsNotNull(info.Time);
-            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
+            Assert.NotNull(info);
+            Assert.NotNull(info.Certificate);
+            Assert.Equal(sign, info.Certificate);
+            Assert.Equal(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
+            Assert.NotNull(info.Time);
+            Assert.True((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
         }
 
-        [TestMethod]
+        [Fact]
         public void RoundTestXadesT()
         {
             var xigner = new XadesCreator(sign);
@@ -403,15 +222,15 @@ namespace IM.Xades.Test
             var xerifier = new XadesVerifier();
             var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xades2)[0]);
 
-            Assert.IsNotNull(info);
-            Assert.IsNotNull(info.Certificate);
-            Assert.AreEqual(sign, info.Certificate);
-            Assert.AreEqual(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
-            Assert.IsNotNull(info.Time);
-            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
+            Assert.NotNull(info);
+            Assert.NotNull(info.Certificate);
+            Assert.Equal(sign, info.Certificate);
+            Assert.Equal(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
+            Assert.NotNull(info.Time);
+            Assert.True((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
         }
 
-        [TestMethod]
+        [Fact]
         public void RoundTestXadesTViaFedict()
         {
             var xigner = new XadesCreator(sign);
@@ -447,51 +266,13 @@ namespace IM.Xades.Test
             var xerifier = new XadesVerifier();
             var info = xerifier.Verify(document, (XmlElement)XadesTools.FindXadesProperties(xades2)[0]);
 
-            Assert.IsNotNull(info);
-            Assert.IsNotNull(info.Certificate);
-            Assert.AreEqual(sign, info.Certificate);
-            Assert.AreEqual(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
-            Assert.IsNotNull(info.Time);
-            Assert.IsTrue((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
+            Assert.NotNull(info);
+            Assert.NotNull(info.Certificate);
+            Assert.Equal(sign, info.Certificate);
+            Assert.Equal(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
+            Assert.NotNull(info.Time);
+            Assert.True((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
         }
 
-        [TestMethod]
-        public void CreatXadesTTest()
-        {
-
-            var xigner = new XadesCreator(sign);
-            xigner.TimestampProvider = new EHealthTimestampProvider(tsa);
-            xigner.DataTransforms.Add(new XmlDsigBase64Transform());
-            xigner.DataTransforms.Add(new OptionalDeflateTransform());
-            var xades = xigner.CreateXadesT(document, "_D4840C96-8212-491C-9CD9-B7144C1AD450");
-
-            Assert.IsNotNull(xades);
-
-            var xml = new StringBuilder();
-            var writerSettings = new XmlWriterSettings
-            {
-                Indent = true
-            };
-            using (var writer = XmlWriter.Create(xml, writerSettings))
-            {
-                xades.WriteTo(writer);
-            }
-            System.Console.WriteLine(xml.ToString());
-
-
-            MemoryStream stream = new MemoryStream();
-            using (var writer = XmlWriter.Create(stream))
-            {
-                xades.WriteTo(writer);
-            }
-
-            IntModule.VerificationResult vResult = im.verifyXadesT(detail, stream.GetBuffer());
-            
-            System.Console.WriteLine(vResult.ResultMajor);
-            System.Console.WriteLine(vResult.ResultMinor);
-            System.Console.WriteLine(vResult.ResultMessage);
-
-            Assert.AreEqual("urn:nip:tack:result:major:success", vResult.ResultMajor);
-        }
     }
 }

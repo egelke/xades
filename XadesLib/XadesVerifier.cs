@@ -94,7 +94,7 @@ namespace IM.Xades
 
             var doc = new XmlDocument();
             nsMgr = new XmlNamespaceManager(doc.NameTable);
-            nsMgr.AddNamespace("xades", "http://uri.etsi.org/01903/v1.3.2#");
+            nsMgr.AddNamespace("xades", Extra.XadesTools.NS);
             nsMgr.AddNamespace("ds", "http://www.w3.org/2000/09/xmldsig#");
         }
 
@@ -120,7 +120,7 @@ namespace IM.Xades
 
             //check if we get a valid xades-props
             //TODO:support QualifyingPropertiesReference
-            if (xadesProps.LocalName != "QualifyingProperties" || xadesProps.NamespaceURI != "http://uri.etsi.org/01903/v1.3.2#") 
+            if (xadesProps.LocalName != "QualifyingProperties" || xadesProps.NamespaceURI != Extra.XadesTools.NS) 
                 throw new InvalidXadesException("The provider xades properties aren't actually xades properties");
             
             //Get the corresponding signature of the xades props
@@ -170,50 +170,10 @@ namespace IM.Xades
             }
             if (includedCerts == null) throw new InvalidXadesException("No certificates where found in the the signature key info");
 
-            //Select the correct certificate based on the xades-bes info
-            XmlNodeList signedCerts = xadesProps.SelectNodes("./xades:SignedProperties/xades:SignedSignatureProperties/xades:SigningCertificate/xades:Cert", nsMgr);
-            //TODO:Support the fact that it is also legal to sign the KeyInfo (G.2.2.1)
-            if (signedCerts.Count == 0) throw new InvalidXadesException("No signing certificates provided in the xades information");
-
-            //Find certs via signed info, checking with hash.
-            ICollection<X509Certificate2> verifiedCerts = new LinkedList<X509Certificate2>();
-            foreach (XmlNode signedCert in signedCerts)
-            {
-                XmlNode issuerTxtNode = signedCert.SelectSingleNode("./xades:IssuerSerial/ds:X509IssuerName/text()", nsMgr);
-                if (issuerTxtNode == null) throw new InvalidXadesException("Xades information does not contain an issuer name for the signing certificate");
-                XmlNode serialNumberTxtNode = signedCert.SelectSingleNode("./xades:IssuerSerial/ds:X509SerialNumber/text()", nsMgr);
-                if (serialNumberTxtNode == null) throw new InvalidXadesException("Xades information does not contain an serial number for the signing certificate");
-
-                X509Certificate2Collection certsSameIssuer = includedCerts.Find(X509FindType.FindByIssuerDistinguishedName, issuerTxtNode.Value, false);
-                if (certsSameIssuer.Count == 0) throw new InvalidXadesException(String.Format("Xades provided signing certificate {0} ({1}) can't be found in the key info", serialNumberTxtNode.Value, issuerTxtNode.Value));
-                X509Certificate2Collection exactCerts = certsSameIssuer.Find(X509FindType.FindBySerialNumber, serialNumberTxtNode.Value, false);
-                if (exactCerts.Count == 0) throw new InvalidXadesException(String.Format("Xades provided signing certificate {0} ({1}) can't be found in the key info", serialNumberTxtNode.Value, issuerTxtNode.Value));
-                if (exactCerts.Count > 1) throw new InvalidXadesException(String.Format("Xades provided signing certificate {0} ({1}) can be found more then once in the key info", serialNumberTxtNode.Value, issuerTxtNode.Value));
-
-                XmlNode digestMethodTxtNode = signedCert.SelectSingleNode("./xades:CertDigest/ds:DigestMethod/@Algorithm", nsMgr);
-                if (digestMethodTxtNode == null) throw new InvalidXadesException("Xades information does not contain the digest method for the signing certificate");
-                XmlNode digestValueTxtNode = signedCert.SelectSingleNode("./xades:CertDigest/ds:DigestValue/text()", nsMgr);
-                if (digestValueTxtNode == null) throw new InvalidXadesException("Xades information does not contain the digest value for the signing certificate");
-
-                HashAlgorithm algo;
-                try
-                {
-                    algo = (HashAlgorithm)CryptoConfig.CreateFromName(digestMethodTxtNode.Value);
-                }
-                catch (Exception e)
-                {
-                    throw new InvalidXadesException("The provided digest method of the signing certificate in xades isn't valid or isn't supported", e);
-                }
-                String digestValueReal = Convert.ToBase64String(algo.ComputeHash(exactCerts[0].GetRawCertData()));
-                if (digestValueTxtNode.Value != digestValueReal) throw new XadesValidationException("The certificate of the key info isn't correct according to the certificate info in xades");
-
-                verifiedCerts.Add(exactCerts[0]);
-            }
-
             //Check if any of the verified certificates is used for the signature
             bool valid = false;
             X509Certificate2 signingCert = null;
-            IEnumerator<X509Certificate2> vce = verifiedCerts.GetEnumerator();
+            X509Certificate2Enumerator vce = includedCerts.GetEnumerator();
             while (!valid && vce.MoveNext())
             {
                 signingCert = vce.Current;
@@ -331,10 +291,14 @@ namespace IM.Xades
 
                         //check the timestamp token against the signing time.
                         DateTime tsTime = ts.Time;
-                        if (signingTime == null)
+                        if (signingTime != null)
                         {
                             DateTime signingTimeUtc = signingTime.Value.UtcDateTime;
                             if (Math.Abs((tsTime - signingTimeUtc).TotalSeconds) > TimestampGracePeriod.TotalSeconds) throw new XadesValidationException("The signature timestamp it to old with regards to the signing time");
+                        } 
+                        else
+                        {
+                            signingTime = tsTime;
                         }
                     }
                     else
@@ -347,20 +311,58 @@ namespace IM.Xades
             }
 
             //check check the chain
-            //TODO:support profiles > XAdES-T
-            Chain chain = signingCert.BuildChain(signingTime == null ? DateTime.Now : signingTime.Value.LocalDateTime,
+            Chain chain = signingCert.BuildChain(signingTime == null ? DateTime.UtcNow : signingTime.Value.UtcDateTime,
                 includedCerts);
             if (chain.ChainStatus.Count(x => x.Status != X509ChainStatusFlags.NoError) > 0)
-                throw new XadesValidationException(String.Format("The signing certificate chain is invalid ({1}: {2})",
+                throw new XadesValidationException(String.Format("The signing certificate chain is invalid ({0}: {1})",
                         chain.ChainStatus[0].Status, chain.ChainStatus[0].StatusInformation));
 
-            //check for unused certs
-            foreach (X509Certificate2 verifiedCert in verifiedCerts)
+            //Select the correct certificate based on the xades-bes info
+            XmlNodeList signedCerts = xadesProps.SelectNodes("./xades:SignedProperties/xades:SignedSignatureProperties/xades:SigningCertificate/xades:Cert", nsMgr);
+            //TODO:Support the fact that it is also legal to sign the KeyInfo (G.2.2.1)
+            if (signedCerts.Count == 0) throw new InvalidXadesException("No signing certificates provided in the xades information");
+
+            //Find certs via signed info, checking with hash.
+            X509Certificate2Collection unsignedChainCerts = new X509Certificate2Collection(chain.ChainElements.Select(c => c.Certificate).ToArray());
+            foreach (XmlNode signedCert in signedCerts)
             {
-                if (chain.ChainElements.Count(x => x.Certificate == verifiedCert) == 0)
-                    throw new XadesValidationException(String.Format("Xades contains info contains references to unused certificate: {0}", verifiedCert.Subject));
+                XmlNode issuerTxtNode = signedCert.SelectSingleNode("./xades:IssuerSerial/ds:X509IssuerName/text()", nsMgr);
+                if (issuerTxtNode == null) throw new InvalidXadesException("Xades information does not contain an issuer name for the signing certificate");
+                XmlNode serialNumberTxtNode = signedCert.SelectSingleNode("./xades:IssuerSerial/ds:X509SerialNumber/text()", nsMgr);
+                if (serialNumberTxtNode == null) throw new InvalidXadesException("Xades information does not contain an serial number for the signing certificate");
+
+                X509Certificate2Collection certsSameIssuer = unsignedChainCerts.Find(X509FindType.FindByIssuerDistinguishedName, issuerTxtNode.Value, false);
+                if (certsSameIssuer.Count == 0) throw new InvalidXadesException(String.Format("Xades provided signed certificate {0} ({1}) can't be found in the chain", serialNumberTxtNode.Value, issuerTxtNode.Value));
+                X509Certificate2Collection exactCerts = certsSameIssuer.Find(X509FindType.FindBySerialNumber, serialNumberTxtNode.Value, false);
+                if (exactCerts.Count == 0) throw new InvalidXadesException(String.Format("Xades provided signed certificate {0} ({1}) can't be found in the chain", serialNumberTxtNode.Value, issuerTxtNode.Value));
+                if (exactCerts.Count > 1) throw new InvalidXadesException(String.Format("Xades provided signed certificate {0} ({1}) can be found more then once in the chain", serialNumberTxtNode.Value, issuerTxtNode.Value));
+
+                XmlNode digestMethodTxtNode = signedCert.SelectSingleNode("./xades:CertDigest/ds:DigestMethod/@Algorithm", nsMgr);
+                if (digestMethodTxtNode == null) throw new InvalidXadesException("Xades information does not contain the digest method for the signing certificate");
+                XmlNode digestValueTxtNode = signedCert.SelectSingleNode("./xades:CertDigest/ds:DigestValue/text()", nsMgr);
+                if (digestValueTxtNode == null) throw new InvalidXadesException("Xades information does not contain the digest value for the signing certificate");
+
+                HashAlgorithm algo;
+                try
+                {
+                    algo = (HashAlgorithm)CryptoConfig.CreateFromName(digestMethodTxtNode.Value);
+                }
+                catch (Exception e)
+                {
+                    throw new InvalidXadesException("The provided digest method of the signing certificate in xades isn't valid or isn't supported", e);
+                }
+                String digestValueReal = Convert.ToBase64String(algo.ComputeHash(exactCerts[0].GetRawCertData()));
+                if (digestValueTxtNode.Value != digestValueReal) throw new XadesValidationException("The certificate of the key info isn't correct according to the certificate info in xades");
+
+                unsignedChainCerts.Remove(exactCerts[0]);
             }
-            
+
+            //has the end cert being signed?
+            if (unsignedChainCerts.Contains(signingCert)) { 
+                    throw new XadesValidationException(String.Format("Signing certificate not part of the signature"));
+            }
+            //TODO::add some kind of warning or option to test for all.
+
             return new SignatureInfo(form, signingCert, signingTime, manifestResults == null ? null : manifestResults.ToArray());
         }
     }

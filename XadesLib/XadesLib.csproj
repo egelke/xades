@@ -1,130 +1,52 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{AF7A9E47-7437-4C99-8729-C420CDF78D35}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <TargetFrameworks>net462</TargetFrameworks>
     <RootNamespace>IM.Xades</RootNamespace>
-    <AssemblyName>IM.Xades</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\IM.Xades.xml</DocumentationFile>
-    <UseVSHostingProcess>true</UseVSHostingProcess>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\IM.Xades.xml</DocumentationFile>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup>
     <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <AssemblyName>IM.Xades</AssemblyName>
+    <Version>3.0.0</Version>
+    <Authors>Egelke BVBA</Authors>
+    <Company>Egelke BVBA</Company>
+    <Description>Xades Library for .Net</Description>
+    <PackageReleaseNotes>
+      Support .Net core
+      Add support for ECDSA keys
+    </PackageReleaseNotes>
+    <Copyright>Copyright © Egelke BVBA 2013-2021</Copyright>
+    <LicenseUrl>http://www.gnu.org/licenses/lgpl.html</LicenseUrl>
+    <PackageProjectUrl>https://github.com/egelke/xades</PackageProjectUrl>
+    <PackageTags>MyCareNet eSigning Xades XML</PackageTags>
+    <PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
+    <IncludeSource>true</IncludeSource>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>sign.snk</AssemblyOriginatorKeyFile>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <AssemblyOriginatorKeyFile>..\debug.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <AssemblyOriginatorKeyFile>..\release.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+
   <ItemGroup>
-    <Reference Include="crypto">
-      <HintPath>..\packages\BouncyCastle-Patch.1.7.0\lib\net40\crypto.dll</HintPath>
-    </Reference>
-    <Reference Include="Egelke.EHealth.Client.Pki, Version=2.1.0.0, Culture=neutral, PublicKeyToken=3dd81f6b7de27543, processorArchitecture=MSIL">
-      <HintPath>..\packages\Egelke.EHealth.Client.Pki.2.1.0-Beta1\lib\net40-Client\Egelke.EHealth.Client.Pki.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Runtime.Serialization" />
+    <EmbeddedResource Include="Resources\QualifyingProperties.xml" />
+    <EmbeddedResource Include="Resources\Timestamp.xml" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
     <Reference Include="System.Security" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <PackageReference Include="Microsoft.Extensions.Logging.TraceSource" Version="5.*" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Extra\OptionalDeflateTransform.cs" />
-    <Compile Include="Extra\RSAPKCS1SHA256SignatureDescription.cs" />
-    <Compile Include="Extra\XadesTools.cs" />
-    <Compile Include="InvalidXadesException.cs" />
-    <Compile Include="ManifestResult.cs" />
-    <Compile Include="ManifestResultStatus.cs" />
-    <Compile Include="Internal\ExtendedSignedXml.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="XadesCreator.cs" />
-    <Compile Include="SignatureInfo.cs" />
-    <Compile Include="XadesForm.cs" />
-    <Compile Include="XadesValidationException.cs" />
-    <Compile Include="XadesVerifier.cs" />
+    <PackageReference Include="Egelke.EHealth.Client.Pki" Version="[2.4.0,3.0.0)" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.*" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.*" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="sign.snk" />
-    <None Include="XadesLib.nuspec" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Contributors.html" />
-    <Content Include="License.html" />
-    <Content Include="license.txt" />
-    <Content Include="Readme.html" />
-    <Content Include="Resources\QualifyingProperties.xml">
-      <SubType>Designer</SubType>
-    </Content>
-    <Content Include="Resources\Timestamp.xml">
-      <SubType>Designer</SubType>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <WCFMetadata Include="Service References\" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>nuget pack "$(ProjectPath)" -IncludeReferencedProjects -Prop Configuration=$(ConfigurationName)
-nuget pack "$(ProjectPath)"  -Symbols</PostBuildEvent>
-  </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

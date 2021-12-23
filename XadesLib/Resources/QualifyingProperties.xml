@@ -20,8 +20,5 @@
         </SigningCertificate>
       </SignedSignatureProperties>
     </SignedProperties>
-    <UnsignedProperties>
-      <UnsignedSignatureProperties />
-    </UnsignedProperties>
   </QualifyingProperties>
 </ds:Object>

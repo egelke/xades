@@ -30,6 +30,8 @@ namespace IM.Xades.Extra
     /// </summary>
     public static class XadesTools
     {
+        public const string NS = "http://uri.etsi.org/01903/v1.3.2#";
+
         private static readonly XmlNamespaceManager nsMgr;
 
         static XadesTools()

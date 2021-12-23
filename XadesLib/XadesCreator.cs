@@ -56,24 +56,24 @@ namespace IM.Xades
         private XmlElement issuerName;
         private XmlElement serialNbr;
 
-        private X509Certificate2 certificate;
-        private List<Transform> dataTransforms;
-        private ITimestampProvider timestampProvider;
 
         /// <summary>
         /// The certificate with private key to sign with.
         /// </summary>
         /// <value>Get or set the certificate that will be used to sign with</value>
+        [Obsolete]
         public X509Certificate2 Certificate {
             get 
             {
-                return certificate;
+                return CertificateChain?[0];
             }
             set 
             {
-                certificate = value;
+                CertificateChain = new List<X509Certificate2> { value };
             }
         }
+
+        public IList<X509Certificate2> CertificateChain { get; set; }
 
         /// <summary>
         /// XML Signature transforms that must be used on the reference of the data.
@@ -91,13 +91,7 @@ namespace IM.Xades
         /// <value>Get the xml signature transforms used on the data.</value>
         /// <seealso cref="Extra.OptionalDeflateTransform"/>
         /// <seealso cref="System.Security.Cryptography.Xml.Transform"/>
-        public List<Transform> DataTransforms
-        {
-            get
-            {
-                return dataTransforms;
-            }
-        }
+        public List<Transform> DataTransforms { get; private set; }
 
         /// <summary>
         /// The timestamp provider that will be used to obtain timestamps.
@@ -114,17 +108,7 @@ namespace IM.Xades
         /// <seealso cref="Egelke.EHealth.Client.Pki.DssTimestampProvider"/>
         /// <seealso cref="Egelke.EHealth.Client.Pki.EHealthTimestampProvider"/>
         /// <value>Get or set the instance to the timestamp provider or null</value>
-        public ITimestampProvider TimestampProvider
-        {
-            get
-            {
-                return timestampProvider;
-            }
-            set
-            {
-                timestampProvider = value;
-            }
-        }
+        public ITimestampProvider TimestampProvider { get; set; }
 
         /// <summary>
         /// Creates an new instance of the class with the singing certificate provided.
@@ -150,9 +134,10 @@ namespace IM.Xades
         /// <command>openssl pkcs12 -export -in file.pem -out file.p12 -name MyCareNet -CSP "Microsoft Enhanced RSA and AES Cryptographic Provider"</command>
         /// </remarks>
         /// <param name="certificate">Certificate with private key, will be used to sign the the message</param>
+        /// <param name="resolveChain"></param>
         /// <exception cref="ArgumentNullException">When the certificate param is null</exception>
         /// <exception cref="ArgumentException">When certificate doesn't contain a private key.</exception>
-        public XadesCreator(X509Certificate2 certificate)
+        public XadesCreator(X509Certificate2 certificate, bool resolveChain = false)
         {
             if (certificate == null)
             {
@@ -163,16 +148,31 @@ namespace IM.Xades
                 throw new ArgumentException("The certificate must be accompanied by a private key", "certificate");
             }
 
-            this.certificate = certificate;
-            this.dataTransforms = new List<Transform>();
+            if (resolveChain)
+            {
+                X509Chain chain = new X509Chain();
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                if (!chain.Build(certificate))
+                    throw new ArgumentException("certificate", "Can not build chain");
+
+                this.CertificateChain = chain.ChainElements
+                    .Cast<X509ChainElement>()
+                    .Select(e => e.Certificate)
+                    .ToList(); 
+            } 
+            else
+            {
+                this.Certificate = certificate;
+            }
+            this.DataTransforms = new List<Transform>();
 
             var qProps = new XmlDocument();
-            qProps.Load(new MemoryStream(Properties.Resources.QualifyingProperties));
+            qProps.Load(Assembly.GetExecutingAssembly().GetManifestResourceStream("IM.Xades.Resources.QualifyingProperties.xml"));
             signObject = qProps.DocumentElement;
 
 
             nsMgr = new XmlNamespaceManager(qProps.NameTable);
-            nsMgr.AddNamespace("xades", "http://uri.etsi.org/01903/v1.3.2#");
+            nsMgr.AddNamespace("xades", Extra.XadesTools.NS);
             nsMgr.AddNamespace("ds", "http://www.w3.org/2000/09/xmldsig#");
 
             target = (XmlAttribute)qProps.SelectSingleNode("//xades:QualifyingProperties/@Target", nsMgr);
@@ -237,14 +237,14 @@ namespace IM.Xades
             var signedXml = new Internal.ExtendedSignedXml(doc);
 
             //Set the signingg key
-            signedXml.SigningKey = certificate.PrivateKey;
+            signedXml.SigningKey = Certificate?.PrivateKey;
             signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
             signedXml.SignedInfo.SignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
 
             //Add the data reference
             var dataRef = new Reference(reference == null ? "" : "#" + reference);
             dataRef.DigestMethod = "http://www.w3.org/2001/04/xmlenc#sha256";
-            if (dataTransforms.Count == 0)
+            if (DataTransforms.Count == 0)
             {
                 if (reference == null)
                 {
@@ -257,7 +257,7 @@ namespace IM.Xades
             }
             else
             {
-                foreach(var transform in dataTransforms) {
+                foreach(var transform in DataTransforms) {
                     dataRef.AddTransform(transform);
                 }
             }
@@ -270,17 +270,19 @@ namespace IM.Xades
             xadesRef.AddTransform(new XmlDsigExcC14NTransform());
             signedXml.AddReference(xadesRef);
 
-            //Add key info (self)
-            var clause = new KeyInfoX509Data(certificate);
-            signedXml.KeyInfo.AddClause(clause);
-            //TODO: Add chain
+            //Add key info up to, but not including the root
+            CertificateChain
+                .Where(c => c.Subject != c.Issuer)
+                .ToList()
+                .ForEach(c => signedXml.KeyInfo.AddClause(new KeyInfoX509Data(c)));
+
 
             //Add data
             target.Value = "#_" + sId.ToString("D");
             signTime.InnerText = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssK", CultureInfo.InvariantCulture);
-            certDigestVal.InnerText = Convert.ToBase64String(SHA256.Create().ComputeHash(certificate.RawData));
-            issuerName.InnerText = certificate.Issuer;
-            serialNbr.InnerText = new BigInteger(certificate.GetSerialNumber()).ToString(CultureInfo.InvariantCulture);
+            certDigestVal.InnerText = Convert.ToBase64String(SHA256.Create().ComputeHash(Certificate?.RawData));
+            issuerName.InnerText = Certificate?.Issuer;
+            serialNbr.InnerText = new BigInteger(Certificate?.GetSerialNumber()).ToString(CultureInfo.InvariantCulture);
 
             var dataObject = new DataObject();
             dataObject.LoadXml(signObject);
@@ -313,13 +315,13 @@ namespace IM.Xades
             {
                 throw new ArgumentNullException("signature", "A signature is required");
             }
-            if (timestampProvider == null)
+            if (TimestampProvider == null)
             {
                 throw new InvalidOperationException("The timestamp provider is required for XAdES-T");
             }
 
             var timestamp = new XmlDocument();
-            timestamp.Load(new MemoryStream(Properties.Resources.Timestamp));
+            timestamp.Load(Assembly.GetExecutingAssembly().GetManifestResourceStream("IM.Xades.Resources.Timestamp.xml"));
             var timestampValue = (XmlElement)timestamp.SelectSingleNode("//xades:EncapsulatedTimeStamp", nsMgr);
 
             XmlNode sigValue = signature.SelectSingleNode("./ds:SignatureValue", nsMgr);
@@ -342,11 +344,15 @@ namespace IM.Xades
             byte[] hashed = sha256.ComputeHash(canonicalized);
 
             //Get the timestamp.
-            byte[] timestampHash = timestampProvider.GetTimestampFromDocumentHash(hashed, "http://www.w3.org/2001/04/xmlenc#sha256");
+            byte[] timestampHash = TimestampProvider.GetTimestampFromDocumentHash(hashed, "http://www.w3.org/2001/04/xmlenc#sha256");
 
             timestampValue.InnerText = Convert.ToBase64String(timestampHash);
 
-            var unsignedSigProps = (XmlElement)signature.SelectSingleNode("./ds:Object/xades:QualifyingProperties/xades:UnsignedProperties/xades:UnsignedSignatureProperties", nsMgr);
+            var qProps = (XmlElement)signature.SelectSingleNode("./ds:Object/xades:QualifyingProperties", nsMgr);
+            var unsignedProps = qProps.OwnerDocument.CreateElement("xades", "UnsignedProperties", Extra.XadesTools.NS);
+            qProps.AppendChild(unsignedProps);
+            var unsignedSigProps = qProps.OwnerDocument.CreateElement("xades", "UnsignedSignatureProperties", Extra.XadesTools.NS);
+            unsignedProps.AppendChild(unsignedSigProps);
             var imported = unsignedSigProps.OwnerDocument.ImportNode(timestamp.DocumentElement, true);
             unsignedSigProps.AppendChild(imported);
         }

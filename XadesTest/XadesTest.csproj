@@ -1,158 +1,41 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>
-    </ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{7A9E860D-4C20-4B16-B1A9-EA0DA6935BEE}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>IM.Xades.Test</RootNamespace>
+    <TargetFrameworks>net462</TargetFrameworks>
+    <RootNamespace>IM.Xades</RootNamespace>
+    <DebugType>Full</DebugType>
+    <IsPackable>false</IsPackable>
+
     <AssemblyName>IM.Xades.Test</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
-    <TargetFrameworkProfile />
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
+
+
   <ItemGroup>
-    <Reference Include="crypto, Version=1.8.5194.33298, Culture=neutral, PublicKeyToken=3b6b50718b92fbc6, processorArchitecture=MSIL">
-      <HintPath>..\packages\BouncyCastle-Patch.1.7.0\lib\net40\crypto.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Egelke.EHealth.Client, Version=2.0.2.0, Culture=neutral, PublicKeyToken=3dd81f6b7de27543, processorArchitecture=MSIL">
-      <HintPath>..\packages\Egelke.EHealth.Client.2.0.2\lib\net40-Client\Egelke.EHealth.Client.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Egelke.EHealth.Client.Pki, Version=2.1.0.0, Culture=neutral, PublicKeyToken=3dd81f6b7de27543, processorArchitecture=MSIL">
-      <HintPath>..\packages\Egelke.EHealth.Client.Pki.2.1.0-Beta1\lib\net40-Client\Egelke.EHealth.Client.Pki.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
-    <Reference Include="System" />
-    <Reference Include="System.ComponentModel.DataAnnotations" />
-    <Reference Include="System.Core">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.Data" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.Security" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xml.Linq" />
+    <PackageReference Include="Egelke.EHealth.Client" Version="3.0.0-beta1" />
+    <PackageReference Include="Egelke.EHealth.Client.Pki" Version="2.4.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" />
   </ItemGroup>
+
+
   <ItemGroup>
-    <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
-      <Visible>False</Visible>
-    </CodeAnalysisDependentAssemblyPaths>
+    <ProjectReference Include="..\XadesLib\XadesLib.csproj" />
   </ItemGroup>
+
+
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Service References\IntModule\Reference.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </Compile>
-    <Compile Include="XadesTest.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\XadesLib\XadesLib.csproj">
-      <Project>{AF7A9E47-7437-4C99-8729-C420CDF78D35}</Project>
-      <Name>XadesLib</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Contributors.html" />
-    <Content Include="data\documentInval.xml" />
-    <Content Include="data\document.xml" />
-    <Content Include="data\part2.xml" />
-    <Content Include="data\part1.xml" />
-    <Content Include="License.html" />
-    <Content Include="Readme.html" />
-    <None Include="data\MYCARENET.p12" />
-    <None Include="data\tsa\Certipost-CASecForLegalPers.crt" />
-    <None Include="data\tsa\Certipost-RootCA.crt" />
-    <None Include="data\tsa\Certipost-tsa1.crt" />
-    <None Include="data\tsa\Certipost-tsa2.crt" />
-    <None Include="data\tsa\Certipost-tsa3.crt" />
-    <None Include="data\tsa\Certipost-tsa4.crt" />
-    <None Include="data\tsa\quovadis-CAG4.crt" />
-    <None Include="data\tsa\quovadis-GAG1.crt" />
-    <None Include="data\tsa\quovadis-RootCA.crt" />
-    <None Include="data\tsa\quovadis-tsa1.crt" />
-    <None Include="data\tsa\quovadis-tsa2.crt" />
-    <None Include="data\tsa\quovadis-tsa3.crt" />
-    <None Include="data\tsa\quovadis-tsa4.crt" />
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
+    <None Update="data\document.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Service References\IntModule\IM.Xades.Test.IntModule.VerificationResult.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
+    <None Update="data\MYCARENET.p12">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Service References\IntModule\Reference.svcmap">
-      <Generator>WCF Proxy Generator</Generator>
-      <LastGenOutput>Reference.cs</LastGenOutput>
-    </None>
-    <None Include="Service References\IntModule\configuration.svcinfo" />
-    <None Include="Service References\IntModule\configuration91.svcinfo" />
-    <None Include="Service References\IntModule\XadesTools.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Service References\IntModule\XadesTools1.wsdl" />
-    <None Include="Service References\IntModule\XadesTools4.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Service References\IntModule\XadesTools41.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Service References\IntModule\XadesTools43.xsd">
-      <SubType>Designer</SubType>
+    <None Update="data\MYCARENET.pwd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <WCFMetadata Include="Service References\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config">
-      <SubType>Designer</SubType>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <WCFMetadataStorage Include="Service References\IntModule\" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
+
 </Project>
