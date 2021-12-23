@@ -29,6 +29,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Numerics;
 using Egelke.EHealth.Client.Pki;
+using Egelke.EHealth.Client.Pki.ECDSA;
 
 namespace IM.Xades
 {
@@ -42,6 +43,10 @@ namespace IM.Xades
     /// </remarks>
     public class XadesCreator
     {
+
+        static XadesCreator() {
+            ECDSAConfig.Init();
+        }
 
         private XmlNamespaceManager nsMgr;
 
@@ -233,9 +238,12 @@ namespace IM.Xades
             var signedXml = new Internal.ExtendedSignedXml(doc);
 
             //Set the signingg key
-            signedXml.SigningKey = Certificate?.PrivateKey;
+            signedXml.SigningKey = (AsymmetricAlgorithm) Certificate?.GetRSAPrivateKey() ?? Certificate?.GetECDsaPrivateKey();
             signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
-            signedXml.SignedInfo.SignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+            if (signedXml.SigningKey is RSA)
+                signedXml.SignedInfo.SignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+            else
+                signedXml.SignedInfo.SignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256";
 
             //Add the data reference
             var dataRef = new Reference(reference == null ? "" : "#" + reference);

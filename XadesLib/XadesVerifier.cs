@@ -34,6 +34,7 @@ using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.X509.Store;
 using System.Reflection;
 using Egelke.EHealth.Client.Pki;
+using Egelke.EHealth.Client.Pki.ECDSA;
 
 namespace IM.Xades
 {
@@ -49,6 +50,7 @@ namespace IM.Xades
     {
         static XadesVerifier()
         {
+            ECDSAConfig.Init();
             CryptoConfig.AddAlgorithm(typeof(OptionalDeflateTransform), OptionalDeflateTransform.AlgorithmUri);
 #if NETSTANDARD
             CryptoConfig.AddAlgorithm(typeof(XmlDsigC14NTransform), "http://www.w3.org/TR/2001/REC-xml-c14n-20010315");
@@ -180,7 +182,8 @@ namespace IM.Xades
             while (!valid && vce.MoveNext())
             {
                 signingCert = vce.Current;
-                valid = signature.CheckSignature(signingCert.PublicKey.Key);
+                AsymmetricAlgorithm key = (AsymmetricAlgorithm) signingCert.GetRSAPublicKey() ?? signingCert.GetECDsaPublicKey();
+                valid = signature.CheckSignature(key);
             }
             if (!valid) throw new XadesValidationException("The signature is invalid");
 

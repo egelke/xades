@@ -14,6 +14,7 @@
   <ItemGroup>
     <PackageReference Include="Egelke.EHealth.Client" Version="3.0.0-beta1" />
     <PackageReference Include="Egelke.EHealth.Client.Pki" Version="2.4.0" />
+    <PackageReference Include="Egelke.Eid.Client" Version="1.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" />
@@ -27,6 +28,9 @@
 
 
   <ItemGroup>
+    <None Update="data\basic.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="data\document.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
