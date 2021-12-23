@@ -43,6 +43,7 @@ namespace IM.Xades.Test
 
         private X509Certificate2 auth;
         private X509Certificate2 sign;
+        private X509Certificate2Collection extraCerts;
         private TimeStampAuthorityClient tsa;
 
         public XadesTest()
@@ -50,6 +51,7 @@ namespace IM.Xades.Test
             var ehP12 = new EHealthP12(@"data\MYCARENET.p12", File.ReadAllText(@"data\MYCARENET.pwd"));
             auth = ehP12["authentication"];
             sign = ehP12["authentication"];
+            extraCerts = ehP12.ToCollection();
 
             //load test document as xml
             document = new XmlDocument();
@@ -106,7 +108,7 @@ namespace IM.Xades.Test
         [Fact]
         public void RoundTestXadesBes()
         {
-            var xigner = new XadesCreator(sign);
+            var xigner = new XadesCreator(sign, true, extraCerts);
             xigner.DataTransforms.Add(new XmlDsigBase64Transform());
             xigner.DataTransforms.Add(new OptionalDeflateTransform());
             var xades = xigner.CreateXadesBes(document, "_D4840C96-8212-491C-9CD9-B7144C1AD450");
@@ -144,12 +146,13 @@ namespace IM.Xades.Test
             Assert.Equal(XadesForm.XadesBes, info.Form);
             Assert.NotNull(info.Time);
             Assert.True((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
+            Assert.Empty(info.ManifestResult);
         }
 
         [Fact]
         public void RountTestXadesTFullDoc()
         {
-            var xigner = new XadesCreator(sign);
+            var xigner = new XadesCreator(sign, true, extraCerts);
             xigner.TimestampProvider = new EHealthTimestampProvider(tsa);
 
             var xades = xigner.CreateXadesT(document);
@@ -185,12 +188,13 @@ namespace IM.Xades.Test
             Assert.Equal(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
             Assert.NotNull(info.Time);
             Assert.True((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
+            Assert.Empty(info.ManifestResult);
         }
 
         [Fact]
         public void RoundTestXadesT()
         {
-            var xigner = new XadesCreator(sign);
+            var xigner = new XadesCreator(sign, true, extraCerts);
             xigner.TimestampProvider = new EHealthTimestampProvider(tsa);
             xigner.DataTransforms.Add(new XmlDsigBase64Transform());
             xigner.DataTransforms.Add(new OptionalDeflateTransform());
@@ -228,12 +232,13 @@ namespace IM.Xades.Test
             Assert.Equal(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
             Assert.NotNull(info.Time);
             Assert.True((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
+            Assert.Empty(info.ManifestResult);
         }
 
         [Fact]
         public void RoundTestXadesTViaFedict()
         {
-            var xigner = new XadesCreator(sign);
+            var xigner = new XadesCreator(sign, true, extraCerts);
             xigner.TimestampProvider = new Rfc3161TimestampProvider();
             xigner.DataTransforms.Add(new XmlDsigBase64Transform());
             xigner.DataTransforms.Add(new OptionalDeflateTransform());
@@ -272,7 +277,10 @@ namespace IM.Xades.Test
             Assert.Equal(XadesForm.XadesBes | XadesForm.XadesT, info.Form);
             Assert.NotNull(info.Time);
             Assert.True((DateTimeOffset.Now - info.Time.Value) < new TimeSpan(0, 5, 0));
+            Assert.Empty(info.ManifestResult);
         }
+
+
 
     }
 }

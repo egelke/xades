@@ -135,10 +135,11 @@ namespace IM.Xades
         /// <command>openssl pkcs12 -export -in file.pem -out file.p12 -name MyCareNet -CSP "Microsoft Enhanced RSA and AES Cryptographic Provider"</command>
         /// </remarks>
         /// <param name="certificate">Certificate with private key, will be used to sign the the message</param>
-        /// <param name="resolveChain"></param>
+        /// <param name="includeChain">Add the chain (vs only the signing end cert), defaults to false</param>
+        /// <param name="extraCerts">Extra certs to use to build the chain</param>
         /// <exception cref="ArgumentNullException">When the certificate param is null</exception>
         /// <exception cref="ArgumentException">When certificate doesn't contain a private key.</exception>
-        public XadesCreator(X509Certificate2 certificate, bool resolveChain = false)
+        public XadesCreator(X509Certificate2 certificate, bool includeChain = false, X509Certificate2Collection extraCerts = null)
         {
             if (certificate == null)
             {
@@ -149,22 +150,25 @@ namespace IM.Xades
                 throw new ArgumentException("The certificate must be accompanied by a private key", "certificate");
             }
 
-            if (resolveChain)
+            if (includeChain)
             {
                 X509Chain chain = new X509Chain();
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                if (extraCerts != null) chain.ChainPolicy.ExtraStore.AddRange(extraCerts);
                 if (!chain.Build(certificate))
                     throw new ArgumentException("certificate", "Can not build chain");
 
                 this.CertificateChain = chain.ChainElements
                     .Cast<X509ChainElement>()
                     .Select(e => e.Certificate)
-                    .ToList(); 
-            } 
+                    .ToList();
+            }
             else
             {
                 this.Certificate = certificate;
             }
+
             this.DataTransforms = new List<Transform>();
 
             var qProps = new XmlDocument();

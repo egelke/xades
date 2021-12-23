@@ -158,7 +158,7 @@ namespace IM.Xades
             }
 
             //Get the provided certificates
-            X509Certificate2Collection includedCerts = null;
+            X509Certificate2Collection includedCerts = new X509Certificate2Collection();
             IEnumerator keyInfo = signature.Signature.KeyInfo.GetEnumerator();
             while (keyInfo.MoveNext())
             {
@@ -166,14 +166,14 @@ namespace IM.Xades
                 if (clause.GetType() == typeof(KeyInfoX509Data))
                 {
                     KeyInfoX509Data x509 = (KeyInfoX509Data)clause;
-                    includedCerts = new X509Certificate2Collection((X509Certificate2[]) x509.Certificates.ToArray(typeof(X509Certificate2)));
+                    includedCerts.AddRange((X509Certificate2[]) x509.Certificates.ToArray(typeof(X509Certificate2)));
                 }
                 else 
                 {
                     throw new NotSupportedException("Only X509Data is supported");
                 }
             }
-            if (includedCerts == null) throw new InvalidXadesException("No certificates where found in the the signature key info");
+            if (includedCerts == null || includedCerts.Count  == 0) throw new InvalidXadesException("No certificates where found in the the signature key info");
 
             //Check if any of the verified certificates is used for the signature
             bool valid = false;
@@ -188,10 +188,9 @@ namespace IM.Xades
             if (!valid) throw new XadesValidationException("The signature is invalid");
 
             //Verify the manifests if present.
-            List<ManifestResult> manifestResults = null;
+            List<ManifestResult> manifestResults = new List<ManifestResult>();
             if (VerifyManifest)
             {
-                manifestResults = new List<ManifestResult>();
                 XmlNodeList manifestNodes = signatureNode.SelectNodes("./ds:Object/ds:Manifest", nsMgr);
                 foreach (XmlNode manifestNode in manifestNodes)
                 {
@@ -369,7 +368,7 @@ namespace IM.Xades
             }
             //TODO::add some kind of warning or option to test for all.
 
-            return new SignatureInfo(form, signingCert, signingTime, manifestResults == null ? null : manifestResults.ToArray());
+            return new SignatureInfo(form, signingCert, signingTime, manifestResults.ToArray());
         }
     }
 }
