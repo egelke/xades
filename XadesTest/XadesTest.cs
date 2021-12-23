@@ -47,7 +47,7 @@ namespace IM.Xades.Test
 
         public XadesTest()
         {
-            var ehP12 = new EHealthP12(@"data\MYCARENET.p12", File.ReadLines(@"data\MYCARENET.pwd").First());
+            var ehP12 = new EHealthP12(@"data\MYCARENET.p12", File.ReadAllText(@"data\MYCARENET.pwd"));
             auth = ehP12["authentication"];
             sign = ehP12["authentication"];
 

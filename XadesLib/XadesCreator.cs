@@ -42,10 +42,6 @@ namespace IM.Xades
     /// </remarks>
     public class XadesCreator
     {
-        static XadesCreator()
-        {
-            CryptoConfig.AddAlgorithm(typeof(Extra.RSAPKCS1SHA256SignatureDescription), "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256");
-        }
 
         private XmlNamespaceManager nsMgr;
 

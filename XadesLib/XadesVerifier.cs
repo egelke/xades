@@ -49,8 +49,11 @@ namespace IM.Xades
     {
         static XadesVerifier()
         {
-            CryptoConfig.AddAlgorithm(typeof(RSAPKCS1SHA256SignatureDescription), "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256");
             CryptoConfig.AddAlgorithm(typeof(OptionalDeflateTransform), OptionalDeflateTransform.AlgorithmUri);
+#if NETSTANDARD
+            CryptoConfig.AddAlgorithm(typeof(XmlDsigC14NTransform), "http://www.w3.org/TR/2001/REC-xml-c14n-20010315");
+            CryptoConfig.AddAlgorithm(typeof(XmlDsigExcC14NTransform), "http://www.w3.org/2001/10/xml-exc-c14n#");
+#endif
         }
 
         private XmlNamespaceManager nsMgr;
@@ -253,10 +256,10 @@ namespace IM.Xades
                     if (signatureValue == null) throw new InvalidXadesException("Can't find the signature value for the signature timestamp");
 
                     var timestampC14NAlgo = (Transform) CryptoConfig.CreateFromName(timestampC14NAlgoNode.Value);
-                    if (timestampC14NAlgo.GetType() != typeof(XmlDsigC14NTransform) && timestampC14NAlgo.GetType() != typeof(XmlDsigExcC14NTransform))
+                    if (timestampC14NAlgo == null || timestampC14NAlgo.GetType() != typeof(XmlDsigC14NTransform) && timestampC14NAlgo.GetType() != typeof(XmlDsigExcC14NTransform))
                         throw new InvalidXadesException(String.Format("The signature timestamp has a canonicalization method that isn't allowed {0}", timestampC14NAlgoNode.Value));
 
-                    //Serialize because the C14N overloads which accepts lists is totally wrong (it C14N's the document)
+                    //Serialize because the C14N overloads which accepts lists is totally wrong (it C14N's the document)    
                     MemoryStream stream = new MemoryStream();
                     using (var writer = XmlWriter.Create(stream))
                     {
